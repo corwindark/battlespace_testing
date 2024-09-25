@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "battlespace_testing"
+version = "0.1.0"
+description = "A testing package from an ongoing game development project"
+authors = ["Corwin Dark"]
+license = "Proprietary"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pandas = "^2.2.3"
+arcade = "^2.6.17"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
