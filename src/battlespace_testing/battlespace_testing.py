@@ -13,7 +13,8 @@ class ShopView(arcade.View):
     def on_mouse_press(self, _x, _y, _button, _modifiers):
 
 def main():
-    
+
+
 
 
 arcade.open_window(600,600, "example")
