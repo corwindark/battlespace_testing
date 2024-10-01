@@ -91,7 +91,7 @@ class ShopView(arcade.View):
 def main():
 
     window = arcade.Window(overall_window_size[0], overall_window_size[1], 'test')
-    shop1_view = ShopView()
+    shop1_view = ShopView() 
     window.show_view(shop1_view)
     arcade.run()
 
