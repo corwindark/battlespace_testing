@@ -54,7 +54,7 @@ class ShopCard(arcade.Sprite):
         self.card = card_id
         
         sprite_txt = card_dict[card_id]['sprite_id'] 
-        self.image_file_name = f"../../../images/{sprite_txt}.png"
+        self.image_file_name = f"./images/{sprite_txt}.png"
 
         super().__init__(self.image_file_name, scale, hit_box_algorithm = 'None')
 
@@ -73,15 +73,19 @@ class ShopView(arcade.View):
     def on_draw(self):
         self.clear()
         arcade.draw_text("SHOP SCRN", shop_window_size[0], shop_window_size[1] )
+        turret1 = ShopCard('turret_1')
+        turret1.position = 100, 100
+        turret1.draw()
 
     def on_mouse_press(self, _x, _y, _button, _modifiers):
         self.clear()
-        arcade.close_window()
+     
 
     def on_mouse_release(self, _x, _y, _button, _modifiers):    
-        pass
+        arcade.close_window()
 
-    def on_mouse_motion(self, x, y, dx, dy)
+
+    def on_mouse_motion(self, x, y, dx, dy):
         pass
 
 
