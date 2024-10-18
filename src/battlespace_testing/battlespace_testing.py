@@ -122,6 +122,16 @@ class BoardTile(arcade.Sprite):
     def __init__(self, card_id):
 
         self.tile = card_id
+
+
+board_tile_status = {
+    "player_one": [str(x) for x in range(0,35)],
+    "player_two": [str(x) for x in range(0,35)]
+}
+
+board_tile_sprites = {
+    ""
+}
         
 
 class ShopView(arcade.View):
@@ -134,11 +144,19 @@ class ShopView(arcade.View):
         self.background_spritelist: arcade.SpriteList = arcade.SpriteList()
         # list to hold shop sprites
         self.shop_spritelist: arcade.SpriteList = arcade.SpriteList()
+        self.board_spritelist: arcade.SpriteList = arcade.SpriteList()
 
         # define manager
         self.manager = arcade.gui.UIManager()
         # define V-Box
         self.v_box = arcade.gui.UIBoxLayout()
+
+
+        # these variables store values needed for the dragging-dropping placement of store tiles
+        self.held_tile_original_position = []
+        self.held_tile = []
+
+        # this is the table of 
 
 
         # add end turn button (should advance to next player window, or to combat)
@@ -233,7 +251,7 @@ class ShopView(arcade.View):
         lanes = ['1','2','3','4','5','6','7']
         
         # place the board in relation to the shop
-        board_offset_vert = shop_vertical_offset - 300
+        board_offset_vert = shop_vertical_offset - 650
         board_offset_hor = 200
 
         count = 0
@@ -253,7 +271,12 @@ class ShopView(arcade.View):
                 tile.alpha = 100
                 tile.left = x_pos_calc
                 tile.top = y_pos_calc
-                self.background_spritelist.append(tile)
+                self.board_spritelist.append(tile)
+
+
+                board_tile_status[self.player_id][count-1] = 'empty'  
+
+
         
         # fill the shop with first set of cards
         self.roll_shop()
@@ -265,26 +288,91 @@ class ShopView(arcade.View):
 
         title_text = "SHOP SCREEN FOR " + self.player_id
         arcade.draw_text(title_text, overall_window_size[0]/4, 950, arcade.color.BLACK, font_size= 20, anchor_x= "left")
-        #turret1 = ShopCard('turret_1')
-        #turret1.position = 100, 100
-        #turret1.draw()
 
         self.manager.draw()
         self.background_spritelist.draw()
         self.shop_spritelist.draw()
+        self.board_spritelist.draw()
+
 
     def on_hide_view(self):
         self.manager.disable()
 
-#    def on_mouse_press(self, _x, _y, _button, _modifiers):
-#        self.clear()
+    def on_mouse_press(self, _x, _y, _button, _modifiers):
+        
      
+        picked_tile = arcade.get_sprites_at_point((_x, _y), self.shop_spritelist)
+
+        if not picked_tile == None and not self.held_tile == None:
+            self.held_tile_original_position = [picked_tile[0].position]
+            self.held_tile = picked_tile
+
     def on_mouse_release(self, _x, _y, _button, _modifiers):    
-        arcade.close_window()
+        
+        def returnCard():
+            print("no valid loc found")
+            print("going back to: ", self.held_tile_original_position[0])
+            print("from: ", self.held_tile[0].position)
+            self.held_tile[0].position = self.held_tile_original_position[0]
+            self.held_tile = []
+        
+        # if we are holding a card, check if we have place it somewhere
+        if not self.held_tile == []:
+            # look for background tiles at the point of mouse release    
+            board_tile_sprite = arcade.get_sprites_at_point((_x, _y), self.board_spritelist)
+
+            if board_tile_sprite == []:
+                returnCard()
+                return
+            
+
+            print(board_tile_sprite)
 
 
-    def on_mouse_motion(self, x, y, dx, dy):
-        pass
+            # iterator to index list of board tile sprites
+            count = 0
+            # id number of the cell where we find a match
+            cell_id = -1
+            # loop through background sprites with an index id, and store if we find a match
+            for sprite in self.board_spritelist:
+                if sprite == board_tile_sprite[0]:
+                    cell_id = count
+                    print(f"cell number {cell_id} identified!")
+
+                count += 1
+
+            print("card found is: ", cell_id)
+            print(board_tile_status[self.player_id][cell_id])
+        
+            # if we did not find a valid cell, send tile back to its shop position
+            if cell_id == -1 or not board_tile_status[self.player_id][cell_id] == 'empty':
+                returnCard()
+            # if we did find a valid cell, check if it is empty 
+            else:
+
+                print(board_tile_status[self.player_id])
+                print("placing card: ", self.held_tile[0].card, " at: ", cell_id )
+                board_tile_status[self.player_id][cell_id] = self.held_tile[0].card
+                self.held_tile[0].position = board_tile_sprite[0].position
+                self.held_tile = []
+
+
+
+
+
+        
+        
+        
+
+    def on_mouse_motion(self, _x, _y, dx, dy):
+        
+        if self.held_tile == []:
+            pass
+        else:
+            for tile in self.held_tile:
+                tile.center_x += dx
+                tile.center_y += dy
+
 
 
 
