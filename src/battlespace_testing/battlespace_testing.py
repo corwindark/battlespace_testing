@@ -349,6 +349,7 @@ class ShopView(arcade.View):
                 returnCard()
             # if we did find a valid cell, check if it is empty 
             else:
+                
 
                 print(board_tile_status[self.player_id])
                 print("placing card: ", self.held_tile[0].card, " at: ", cell_id )
