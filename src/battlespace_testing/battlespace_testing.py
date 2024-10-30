@@ -24,9 +24,9 @@ shop_window_size = (600, 800)
 battle_window_size = (800, 800)
 overall_window_size = (1000,1000)
 
-tile_size = 100
-tile_width = tile_size
-tile_height = tile_size
+TILE_SIZE = 100
+tile_width = TILE_SIZE
+tile_height = TILE_SIZE
 
 # shop mats
 shop_tile_width = tile_width * 1.25
@@ -113,7 +113,7 @@ class ShopCard(arcade.Sprite):
         #height = img.shape[0]
         width = img.shape[1]
         
-        scaleval = tile_size / width
+        scaleval = TILE_SIZE / width
 
         super().__init__(self.image_file_name, scale= scaleval, hit_box_algorithm = 'None')
 
@@ -349,18 +349,13 @@ class ShopView(arcade.View):
                 returnCard()
             # if we did find a valid cell, check if it is empty 
             else:
-                
+
 
                 print(board_tile_status[self.player_id])
                 print("placing card: ", self.held_tile[0].card, " at: ", cell_id )
                 board_tile_status[self.player_id][cell_id] = self.held_tile[0].card
                 self.held_tile[0].position = board_tile_sprite[0].position
                 self.held_tile = []
-
-
-
-
-
         
         
         
