@@ -144,7 +144,13 @@ class ShopView(arcade.View):
         self.background_spritelist: arcade.SpriteList = arcade.SpriteList()
         # list to hold shop sprites
         self.shop_spritelist: arcade.SpriteList = arcade.SpriteList()
+        # list to hold the tiles of the board
         self.board_spritelist: arcade.SpriteList = arcade.SpriteList()
+        # list to hold the rooms actually purchased and in the players ship
+        self.ship_spritelist: arcade.SpriteList = arcade.SpriteList()
+
+        # set gold
+        self.money = 10
 
         # define manager
         self.manager = arcade.gui.UIManager()
@@ -172,7 +178,7 @@ class ShopView(arcade.View):
         # add reroll button
         reroll_button = arcade.gui.UIFlatButton(text="Reroll ($1)", width=200)
         self.v_box.add(reroll_button.with_space_around(bottom=20))
-        reroll_button.on_click = self.roll_shop
+        reroll_button.on_click = self.on_reroll_button
 
         self.manager.add(
             arcade.gui.UIAnchorWidget(
@@ -193,8 +199,18 @@ class ShopView(arcade.View):
 
 
 
-    def roll_shop(self,junk = None):
+    def roll_shop(self, purchasewithmoney:bool, junk = None):
+        
+        print("rolling with x money: ", self.money)
+        # spend one gold if we have it, otherwise do nothing
+        if purchasewithmoney == True:
+            print('spending 1 money')
 
+            if self.money >= 1:
+                self.money = self.money -1
+            else:
+                pass
+        
         # clear existing cardlist
         self.shop_spritelist = arcade.SpriteList()
 
@@ -218,9 +234,9 @@ class ShopView(arcade.View):
 
             self.shop_spritelist.append(shop_card)
 
-    def on_reroll_button(self):
-
-        self.roll_shop()
+    def on_reroll_button(self, xys):
+        print("reroll button ")
+        self.roll_shop(True)
 
 
 
@@ -279,24 +295,44 @@ class ShopView(arcade.View):
 
         
         # fill the shop with first set of cards
-        self.roll_shop()
+        self.roll_shop(False)
 
 
 
     def on_draw(self):
         self.clear()
 
+        # title the shop
         title_text = "SHOP SCREEN FOR " + self.player_id
         arcade.draw_text(title_text, overall_window_size[0]/4, 950, arcade.color.BLACK, font_size= 20, anchor_x= "left")
 
+        # display current money
+        money_text = "$" + str(self.money)
+        arcade.draw_text(money_text, overall_window_size[0]/10, 700, arcade.color.BLACK, font_size= 20, anchor_x= "left")
+
+
+        # display sprites
         self.manager.draw()
         self.background_spritelist.draw()
         self.shop_spritelist.draw()
         self.board_spritelist.draw()
 
 
+
     def on_hide_view(self):
         self.manager.disable()
+
+    def try_buy_card(self, shopcard:arcade.sprite, purchasewithmoney:bool = True):
+
+        purchase_success = False
+
+        # add buying criteria here
+        if self.money > 3:
+            purchase_success = True
+
+
+
+        return purchase_success
 
     def on_mouse_press(self, _x, _y, _button, _modifiers):
         
@@ -321,24 +357,31 @@ class ShopView(arcade.View):
             # look for background tiles at the point of mouse release    
             board_tile_sprite = arcade.get_sprites_at_point((_x, _y), self.board_spritelist)
 
+            # get old board tile if there is an old position
+            old_board_tile_sprite = []
+            #if old_position_found:
+            old_board_tile_sprite = arcade.get_sprites_at_point(self.held_tile_original_position[0], self.board_spritelist)
+            old_position_found =  (len(old_board_tile_sprite) > 0)
+
+            # if there's no board tile at release site, send card back and end function
             if board_tile_sprite == []:
                 returnCard()
                 return
             
-
-            print(board_tile_sprite)
-
-
             # iterator to index list of board tile sprites
             count = 0
             # id number of the cell where we find a match
             cell_id = -1
+            old_cell_id = -1
+
             # loop through background sprites with an index id, and store if we find a match
             for sprite in self.board_spritelist:
                 if sprite == board_tile_sprite[0]:
                     cell_id = count
                     print(f"cell number {cell_id} identified!")
-
+                elif old_position_found:
+                    if sprite == old_board_tile_sprite[0]:
+                        old_cell_id = count
                 count += 1
 
             print("card found is: ", cell_id)
@@ -347,13 +390,25 @@ class ShopView(arcade.View):
             # if we did not find a valid cell, send tile back to its shop position
             if cell_id == -1 or not board_tile_status[self.player_id][cell_id] == 'empty':
                 returnCard()
+
+
             # if we did find a valid cell, check if it is empty 
             else:
 
-
+                # place tile on board
                 print(board_tile_status[self.player_id])
                 print("placing card: ", self.held_tile[0].card, " at: ", cell_id )
+                # put the string ID of the card into the player's board
                 board_tile_status[self.player_id][cell_id] = self.held_tile[0].card
+                # make the board tile sprite invisible so our card isn't overlapping with it
+                board_tile_sprite[0].alpha = 0
+
+                # reset the board tile sprite and player board at the last position
+                if old_position_found:
+                    old_board_tile_sprite[0].alpha = 100
+                    board_tile_status[self.player_id][old_cell_id] = 'empty'
+
+                # update the board tiles position and remove it from our 'holding list
                 self.held_tile[0].position = board_tile_sprite[0].position
                 self.held_tile = []
         
