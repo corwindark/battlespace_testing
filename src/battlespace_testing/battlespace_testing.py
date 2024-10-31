@@ -209,7 +209,7 @@ class ShopView(arcade.View):
             if self.money >= 1:
                 self.money = self.money -1
             else:
-                pass
+                return
         
         # clear existing cardlist
         self.shop_spritelist = arcade.SpriteList()
@@ -233,6 +233,7 @@ class ShopView(arcade.View):
             shop_card.top = tile_vertical_position
 
             self.shop_spritelist.append(shop_card)
+        
 
     def on_reroll_button(self, xys):
         print("reroll button ")
@@ -299,24 +300,6 @@ class ShopView(arcade.View):
 
 
 
-    def on_draw(self):
-        self.clear()
-
-        # title the shop
-        title_text = "SHOP SCREEN FOR " + self.player_id
-        arcade.draw_text(title_text, overall_window_size[0]/4, 950, arcade.color.BLACK, font_size= 20, anchor_x= "left")
-
-        # display current money
-        money_text = "$" + str(self.money)
-        arcade.draw_text(money_text, overall_window_size[0]/10, 700, arcade.color.BLACK, font_size= 20, anchor_x= "left")
-
-
-        # display sprites
-        self.manager.draw()
-        self.background_spritelist.draw()
-        self.shop_spritelist.draw()
-        self.board_spritelist.draw()
-
 
 
     def on_hide_view(self):
@@ -327,19 +310,30 @@ class ShopView(arcade.View):
         purchase_success = False
 
         # add buying criteria here
-        if self.money > 3:
+        if self.money >= 3:
+            # pay for card
             purchase_success = True
+            self.money = self.money - 3
+
+            # move card from shop to ship spritelist
+            print(self.shop_spritelist)
+            self.shop_spritelist.pop(self.shop_spritelist.index(shopcard))
+            print(self.shop_spritelist)
+
+            self.ship_spritelist.append(shopcard)
+            
+            #self.ship_spritelist[shopcard]
 
 
 
         return purchase_success
 
     def on_mouse_press(self, _x, _y, _button, _modifiers):
-        
      
         picked_tile = arcade.get_sprites_at_point((_x, _y), self.shop_spritelist)
 
         if not picked_tile == None and not self.held_tile == None:
+
             self.held_tile_original_position = [picked_tile[0].position]
             self.held_tile = picked_tile
 
@@ -395,6 +389,12 @@ class ShopView(arcade.View):
             # if we did find a valid cell, check if it is empty 
             else:
 
+                buy_success = self.try_buy_card(self.held_tile[0], True)
+
+                if buy_success == False:
+                    returnCard()
+                    return
+
                 # place tile on board
                 print(board_tile_status[self.player_id])
                 print("placing card: ", self.held_tile[0].card, " at: ", cell_id )
@@ -423,10 +423,26 @@ class ShopView(arcade.View):
             for tile in self.held_tile:
                 tile.center_x += dx
                 tile.center_y += dy
+    
+
+    def on_draw(self):
+        self.clear()
+
+        # title the shop
+        title_text = "SHOP SCREEN FOR " + self.player_id
+        arcade.draw_text(title_text, overall_window_size[0]/4, 950, arcade.color.BLACK, font_size= 20, anchor_x= "left")
+
+        # display current money
+        money_text = "$" + str(self.money)
+        arcade.draw_text(money_text, overall_window_size[0]/10, 700, arcade.color.BLACK, font_size= 20, anchor_x= "left")
 
 
-
-
+        # display sprites
+        self.manager.draw()
+        self.background_spritelist.draw()
+        self.shop_spritelist.draw()
+        self.board_spritelist.draw()
+        self.ship_spritelist.draw()
 
 
 def main():
