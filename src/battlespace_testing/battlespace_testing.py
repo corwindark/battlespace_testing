@@ -80,18 +80,28 @@ card_dict = {
 
     'lightning_1': {       
         'sprite_id': 'lightning_1',
+        'hp': 8,
+        'atk': 0
     },
     'lightning_2': {       
         'sprite_id': 'lightning_2',
+        'hp': 8,
+        'atk': 0
     },
     'portal_1': {       
         'sprite_id': 'portal_1',
+        'hp': 8,
+        'atk': 0
     },
     'tentacle_1': {       
         'sprite_id': 'tentacle_1',
+        'hp': 8,
+        'atk': 0
     },
     'tentacle_2': {       
         'sprite_id': 'tentacle_2',
+        'hp': 8,
+        'atk': 0
     }
 }
 cardlist = list(card_dict)
@@ -101,21 +111,69 @@ class ShopCard(arcade.Sprite):
     
     def __init__(self, card_id):
         
+        # name of shop card to spawn in with
         self.card = card_id
         
-        sprite_txt = card_dict[card_id]['sprite_id'] 
+        #dictionary storing data about this unit
+        card_data = card_dict[card_id]
+        sprite_txt = card_data['sprite_id'] 
         self.image_file_name = f"./images/{sprite_txt}.png"
 
         # get size of image to automaticall rescale to size of 1 tile
         img = cv2.imread(self.image_file_name, cv2.IMREAD_UNCHANGED)
         dimensions = img.shape
+
         # height, width, number of channels in image
-        #height = img.shape[0]
         width = img.shape[1]
         
         scaleval = TILE_SIZE / width
 
         super().__init__(self.image_file_name, scale= scaleval, hit_box_algorithm = 'None')
+        
+        # store details of card internally
+        self.health = card_data['hp']
+        self.attack = card_data['atk']
+
+        # add details to the card
+        self.healthdisplay = arcade.create_text_sprite(text = str(self.health),start_x = 0, start_y = 0, color = arcade.csscolor.BLACK)
+        self.attackdisplay = arcade.create_text_sprite(text = str(self.attack),start_x = 0, start_y = 0, color = arcade.csscolor.BLACK)
+
+        # coordinates for hp/atk within the card
+        self.HEALTHX = 0.8 * TILE_SIZE
+        self.HEALTHY = 0.8 * TILE_SIZE
+        self.ATTACKX = 0.05 * TILE_SIZE
+        self.ATTACKY = 0.8 * TILE_SIZE
+
+    def set_position_topleft(self, top, left):
+        # helper function to move all the subsprites with the tile
+        self.top = top
+        self.left = left
+
+        self.healthdisplay.position = (self.position[0] + self.HEALTHX , self.position[1] - self.HEALTHY) 
+        self.attackdisplay.position = (self.position[0] + self.ATTACKX , self.position[1] - self.ATTACKY) 
+ 
+    def set_position(self, position):
+        self.center_x = position[0]
+        self.center_y = position[1] 
+
+        self.healthdisplay.position = (self.position[0] + self.HEALTHX , self.position[1] - self.HEALTHY) 
+        self.attackdisplay.position = (self.position[0] + self.ATTACKX , self.position[1] - self.ATTACKY) 
+
+    def add_to_list(self, targetlist:arcade.SpriteList):
+        # helper function to add all the subsprites to the right spritelist
+        self.remove_from_sprite_lists()
+        self.healthdisplay.remove_from_sprite_lists()
+        self.attackdisplay.remove_from_sprite_lists()
+
+        targetlist.append(self)
+        targetlist.append(self.healthdisplay)
+        targetlist.append(self.attackdisplay)
+
+
+
+
+
+    
 
 class BoardTile(arcade.Sprite):
 
@@ -148,6 +206,8 @@ class ShopView(arcade.View):
         self.board_spritelist: arcade.SpriteList = arcade.SpriteList()
         # list to hold the rooms actually purchased and in the players ship
         self.ship_spritelist: arcade.SpriteList = arcade.SpriteList()
+        # use this for dif behavior for dragging store and regular cards
+        self.holding_store_card = False
 
         # set gold
         self.money = 10
@@ -229,10 +289,12 @@ class ShopView(arcade.View):
             tile_vertical_position = shop_vertical_offset - (shop_spacing_vert_pct * shop_tile_height) - backmat_buffer
             x_pos_calc = (shop_horizontal_offset + (shop_spacing_pct*shop_tile_width *i) + (shop_tile_width * (i-1))) + backmat_buffer
 
-            shop_card.left = x_pos_calc
-            shop_card.top = tile_vertical_position
+            #shop_card.left = x_pos_calc
+            #shop_card.top = tile_vertical_position
+            shop_card.set_position_topleft(tile_vertical_position, x_pos_calc)
 
-            self.shop_spritelist.append(shop_card)
+            #self.shop_spritelist.append(shop_card)
+            shop_card.add_to_list(self.shop_spritelist)
         
 
     def on_reroll_button(self, xys):
@@ -317,10 +379,11 @@ class ShopView(arcade.View):
 
             # move card from shop to ship spritelist
             print(self.shop_spritelist)
-            self.shop_spritelist.pop(self.shop_spritelist.index(shopcard))
+            #self.shop_spritelist.pop(self.shop_spritelist.index(shopcard))
+            shopcard.add_to_list(self.ship_spritelist)
+
             print(self.shop_spritelist)
 
-            self.ship_spritelist.append(shopcard)
             
             #self.ship_spritelist[shopcard]
 
@@ -329,13 +392,22 @@ class ShopView(arcade.View):
         return purchase_success
 
     def on_mouse_press(self, _x, _y, _button, _modifiers):
-     
-        picked_tile = arcade.get_sprites_at_point((_x, _y), self.shop_spritelist)
+        
+        # check if we have any ship or shop rooms selected when we click
+        picked_tile_shop = arcade.get_sprites_at_point((_x, _y), self.shop_spritelist)
+        picked_tile_ship = arcade.get_sprites_at_point((_x, _y), self.ship_spritelist)
 
-        if not picked_tile == None and not self.held_tile == None:
+        # this clause for shop tiles
+        if not picked_tile_shop == [] and self.held_tile == []:
+            self.held_tile_original_position = [picked_tile_shop[0].position]
+            self.held_tile = picked_tile_shop
+            self.holding_store_card = True
 
-            self.held_tile_original_position = [picked_tile[0].position]
-            self.held_tile = picked_tile
+        # this clause for board tiles     
+        elif not picked_tile_ship == [] and self.held_tile == []:
+            self.held_tile_original_position = [picked_tile_ship[0].position]
+            self.held_tile = picked_tile_ship
+            self.holding_store_card = False
 
     def on_mouse_release(self, _x, _y, _button, _modifiers):    
         
@@ -343,8 +415,9 @@ class ShopView(arcade.View):
             print("no valid loc found")
             print("going back to: ", self.held_tile_original_position[0])
             print("from: ", self.held_tile[0].position)
-            self.held_tile[0].position = self.held_tile_original_position[0]
+            self.held_tile[0].set_position(self.held_tile_original_position[0])
             self.held_tile = []
+            self.holding_store_card = False
         
         # if we are holding a card, check if we have place it somewhere
         if not self.held_tile == []:
@@ -359,6 +432,7 @@ class ShopView(arcade.View):
 
             # if there's no board tile at release site, send card back and end function
             if board_tile_sprite == []:
+                print("no board tile at release location")
                 returnCard()
                 return
             
@@ -383,13 +457,18 @@ class ShopView(arcade.View):
         
             # if we did not find a valid cell, send tile back to its shop position
             if cell_id == -1 or not board_tile_status[self.player_id][cell_id] == 'empty':
+                print('card found at location')
                 returnCard()
+                return
 
 
             # if we did find a valid cell, check if it is empty 
             else:
 
-                buy_success = self.try_buy_card(self.held_tile[0], True)
+                # check whether this is a card we need to buy, and if so, check if purchase is valid
+                buy_success = True
+                if self.holding_store_card == True:
+                    buy_success = self.try_buy_card(self.held_tile[0], True)
 
                 if buy_success == False:
                     returnCard()
@@ -409,7 +488,7 @@ class ShopView(arcade.View):
                     board_tile_status[self.player_id][old_cell_id] = 'empty'
 
                 # update the board tiles position and remove it from our 'holding list
-                self.held_tile[0].position = board_tile_sprite[0].position
+                self.held_tile[0].set_position(board_tile_sprite[0].position)
                 self.held_tile = []
         
         
@@ -421,8 +500,9 @@ class ShopView(arcade.View):
             pass
         else:
             for tile in self.held_tile:
-                tile.center_x += dx
-                tile.center_y += dy
+                tile.set_position((tile.center_x + dx, tile.center_y + dy))
+                #tile.center_x += dx
+                #tile.center_y += dy
     
 
     def on_draw(self):
