@@ -257,8 +257,6 @@ class ShopView(arcade.View):
         else:    
             self.window.show_view(self.next_screen_view)
 
-
-
     def roll_shop(self, purchasewithmoney:bool, junk = None):
         
         print("rolling with x money: ", self.money)
@@ -296,12 +294,9 @@ class ShopView(arcade.View):
             #self.shop_spritelist.append(shop_card)
             shop_card.add_to_list(self.shop_spritelist)
         
-
     def on_reroll_button(self, xys):
         print("reroll button ")
         self.roll_shop(True)
-
-
 
     def on_show_view(self):
         arcade.set_background_color(arcade.color.WHITE)
@@ -359,10 +354,6 @@ class ShopView(arcade.View):
         
         # fill the shop with first set of cards
         self.roll_shop(False)
-
-
-
-
 
     def on_hide_view(self):
         self.manager.disable()
@@ -491,9 +482,6 @@ class ShopView(arcade.View):
                 self.held_tile[0].set_position(board_tile_sprite[0].position)
                 self.held_tile = []
         
-        
-        
-
     def on_mouse_motion(self, _x, _y, dx, dy):
         
         if self.held_tile == []:
@@ -504,7 +492,6 @@ class ShopView(arcade.View):
                 #tile.center_x += dx
                 #tile.center_y += dy
     
-
     def on_draw(self):
         self.clear()
 
@@ -524,13 +511,23 @@ class ShopView(arcade.View):
         self.board_spritelist.draw()
         self.ship_spritelist.draw()
 
+class FightView(arcade.View):
+
+    def __init__(self, playeroneshop, playertwoshop):
+        super().__init__()
+
+        player1board = 
+        player2board = 
 
 def main():
 
     window = arcade.Window(overall_window_size[0], overall_window_size[1], 'test')
     
+
     shop2_view = ShopView("player_two", None) 
     shop1_view = ShopView("player_one", shop2_view) 
+    
+    
     window.show_view(shop1_view)
     arcade.run()
 
