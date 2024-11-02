@@ -135,14 +135,14 @@ class ShopCard(arcade.Sprite):
         self.attack = card_data['atk']
 
         # add details to the card
-        self.healthdisplay = arcade.create_text_sprite(text = str(self.health),start_x = 0, start_y = 0, color = arcade.csscolor.BLACK)
-        self.attackdisplay = arcade.create_text_sprite(text = str(self.attack),start_x = 0, start_y = 0, color = arcade.csscolor.BLACK)
+        self.healthdisplay = arcade.create_text_sprite(text = str(self.health),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25,bold = True,  font_name = "Cooper Black")
+        self.attackdisplay = arcade.create_text_sprite(text = str(self.attack),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25, bold = True, font_name = "Henney Future")
 
         # coordinates for hp/atk within the card
-        self.HEALTHX = 0.8 * TILE_SIZE
-        self.HEALTHY = 0.8 * TILE_SIZE
-        self.ATTACKX = 0.05 * TILE_SIZE
-        self.ATTACKY = 0.8 * TILE_SIZE
+        self.HEALTHX = 0.3 * TILE_SIZE
+        self.HEALTHY = 0.35 * TILE_SIZE
+        self.ATTACKX = 0.3 * TILE_SIZE
+        self.ATTACKY = 0.35 * TILE_SIZE
 
     def set_position_topleft(self, top, left):
         # helper function to move all the subsprites with the tile
@@ -150,14 +150,14 @@ class ShopCard(arcade.Sprite):
         self.left = left
 
         self.healthdisplay.position = (self.position[0] + self.HEALTHX , self.position[1] - self.HEALTHY) 
-        self.attackdisplay.position = (self.position[0] + self.ATTACKX , self.position[1] - self.ATTACKY) 
+        self.attackdisplay.position = (self.position[0] - self.ATTACKX , self.position[1] - self.ATTACKY) 
  
     def set_position(self, position):
         self.center_x = position[0]
         self.center_y = position[1] 
 
         self.healthdisplay.position = (self.position[0] + self.HEALTHX , self.position[1] - self.HEALTHY) 
-        self.attackdisplay.position = (self.position[0] + self.ATTACKX , self.position[1] - self.ATTACKY) 
+        self.attackdisplay.position = (self.position[0] - self.ATTACKX , self.position[1] - self.ATTACKY) 
 
     def add_to_list(self, targetlist:arcade.SpriteList):
         # helper function to add all the subsprites to the right spritelist
@@ -516,8 +516,15 @@ class FightView(arcade.View):
     def __init__(self, playeroneshop, playertwoshop):
         super().__init__()
 
-        player1board = 
-        player2board = 
+        self.player1board = playeroneshop.ship_spritelist
+        self.player2board = playertwoshop.ship_spritelist
+    
+    def on_draw(self):
+        self.clear() 
+
+        self.player1board.draw()
+        self.player2board.draw()
+
 
 def main():
 
@@ -526,7 +533,9 @@ def main():
 
     shop2_view = ShopView("player_two", None) 
     shop1_view = ShopView("player_one", shop2_view) 
-    
+    fight_view = FightView(shop1_view, shop2_view)
+
+    shop2_view.next_screen_view = fight_view    
     
     window.show_view(shop1_view)
     arcade.run()
