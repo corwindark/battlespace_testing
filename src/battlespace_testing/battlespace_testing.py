@@ -516,10 +516,30 @@ class FightView(arcade.View):
     def __init__(self, playeroneshop, playertwoshop):
         super().__init__()
 
-        self.player1board = playeroneshop.ship_spritelist
-        self.player2board = playertwoshop.ship_spritelist
+        self.player1shop = playeroneshop
+        self.player2shop = playertwoshop
+        self.player1board: arcade.SpriteList
+        self.player2board: arcade.SpriteList
+        self.viewShown = False
+
+    def on_show_view(self):
+
+        self.player1board = self.player1shop.ship_spritelist
+        self.player2board = self.player2shop.ship_spritelist
+
+        self.viewShown = True
+
+
+        # rotate boards
+        for tile in self.player1board:
+            tile.set_position((tile.position[1], tile.position[0]))
+            tile.angle = 90
     
     def on_draw(self):
+
+        self.player1board = self.player1shop.ship_spritelist
+        self.player2board = self.player2shop.ship_spritelist
+        
         self.clear() 
 
         self.player1board.draw()
