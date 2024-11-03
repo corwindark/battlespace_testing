@@ -511,6 +511,7 @@ class ShopView(arcade.View):
         self.board_spritelist.draw()
         self.ship_spritelist.draw()
 
+
 class FightView(arcade.View):
 
     def __init__(self, playeroneshop, playertwoshop):
