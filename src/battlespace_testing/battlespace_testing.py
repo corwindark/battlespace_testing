@@ -516,7 +516,6 @@ class FightView(arcade.View):
 
     def __init__(self, playeroneshop, playertwoshop):
         super().__init__()
-
         self.player1shop = playeroneshop
         self.player2shop = playertwoshop
         self.player1board: arcade.SpriteList
