@@ -152,9 +152,12 @@ class ShopCard(arcade.Sprite):
         self.healthdisplay.position = (self.position[0] + self.HEALTHX , self.position[1] - self.HEALTHY) 
         self.attackdisplay.position = (self.position[0] - self.ATTACKX , self.position[1] - self.ATTACKY) 
  
-    def set_position(self, position):
+    def set_position_cxy(self, position):
+
+        #print("pos 0: ", position[0], "pos 1: ", position[1])
+        #print("center x:", self.center_x, "center y: ", self.center_y)
         self.center_x = position[0]
-        self.center_y = position[1] 
+        self.center_y = position[1]
 
         self.healthdisplay.position = (self.position[0] + self.HEALTHX , self.position[1] - self.HEALTHY) 
         self.attackdisplay.position = (self.position[0] - self.ATTACKX , self.position[1] - self.ATTACKY) 
@@ -210,13 +213,12 @@ class ShopView(arcade.View):
         self.holding_store_card = False
 
         # set gold
-        self.money = 10
+        self.money = 100
 
         # define manager
         self.manager = arcade.gui.UIManager()
         # define V-Box
         self.v_box = arcade.gui.UIBoxLayout()
-
 
         # these variables store values needed for the dragging-dropping placement of store tiles
         self.held_tile_original_position = []
@@ -246,8 +248,6 @@ class ShopView(arcade.View):
                 anchor_y="top",
                 child=self.v_box)
         )
-
-
 
 
     def on_advance_button(self, event):
@@ -303,7 +303,6 @@ class ShopView(arcade.View):
         self.manager.enable()
 
         # setup the list of "placemat" sprites
-        
         shop = arcade.SpriteSolidColor(int(shop_width), int(shop_height), arcade.csscolor.DARK_OLIVE_GREEN )
         shop.left = shop_horizontal_offset
         shop.top = shop_vertical_offset
@@ -318,7 +317,6 @@ class ShopView(arcade.View):
             tile.left = x_pos_calc
             tile.top = tile_vertical_position
             self.background_spritelist.append(tile)
-        
 
         # set up the board placement sprites
         rows = ['a','b','c','d','e']
@@ -347,9 +345,7 @@ class ShopView(arcade.View):
                 tile.top = y_pos_calc
                 self.board_spritelist.append(tile)
 
-
                 board_tile_status[self.player_id][count-1] = 'empty'  
-
 
         
         # fill the shop with first set of cards
@@ -374,9 +370,6 @@ class ShopView(arcade.View):
             shopcard.add_to_list(self.ship_spritelist)
 
             print(self.shop_spritelist)
-
-            
-            #self.ship_spritelist[shopcard]
 
 
 
@@ -406,7 +399,7 @@ class ShopView(arcade.View):
             print("no valid loc found")
             print("going back to: ", self.held_tile_original_position[0])
             print("from: ", self.held_tile[0].position)
-            self.held_tile[0].set_position(self.held_tile_original_position[0])
+            self.held_tile[0].set_position_cxy(self.held_tile_original_position[0])
             self.held_tile = []
             self.holding_store_card = False
         
@@ -479,7 +472,7 @@ class ShopView(arcade.View):
                     board_tile_status[self.player_id][old_cell_id] = 'empty'
 
                 # update the board tiles position and remove it from our 'holding list
-                self.held_tile[0].set_position(board_tile_sprite[0].position)
+                self.held_tile[0].set_position_cxy(board_tile_sprite[0].position)
                 self.held_tile = []
         
     def on_mouse_motion(self, _x, _y, dx, dy):
@@ -488,7 +481,7 @@ class ShopView(arcade.View):
             pass
         else:
             for tile in self.held_tile:
-                tile.set_position((tile.center_x + dx, tile.center_y + dy))
+                tile.set_position_cxy((tile.center_x + dx, tile.center_y + dy))
                 #tile.center_x += dx
                 #tile.center_y += dy
     
@@ -532,9 +525,16 @@ class FightView(arcade.View):
 
         # rotate boards
         for tile in self.player1board:
-            tile.set_position((tile.position[1], tile.position[0]))
-            tile.angle = 90
-    
+            # make changes to shopcards, they will move their associated sprites
+            if tile.__class__.__name__ == "ShopCard":
+                print("tile type: ", tile.__class__.__name__)
+                tile.set_position_cxy((1000 - tile.position[1], tile.position[0] - 200))
+                print("tile start angle: ", tile.angle)
+                tile.angle = -90
+                print("tile after angle: ", tile.angle)
+
+
+
     def on_draw(self):
 
         self.player1board = self.player1shop.ship_spritelist
@@ -549,7 +549,7 @@ class FightView(arcade.View):
 def main():
 
     window = arcade.Window(overall_window_size[0], overall_window_size[1], 'test')
-    
+    #window = arcade.Window(overall_window_size[0], 2000, 'test')
 
     shop2_view = ShopView("player_two", None) 
     shop1_view = ShopView("player_one", shop2_view) 
