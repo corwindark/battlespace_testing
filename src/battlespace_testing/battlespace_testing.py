@@ -22,7 +22,7 @@ def image_size(filename):
 
 shop_window_size = (600, 800)
 battle_window_size = (800, 800)
-overall_window_size = (1000,1000)
+overall_window_size = (1400,1000)
 
 TILE_SIZE = 100
 tile_width = TILE_SIZE
@@ -527,11 +527,21 @@ class FightView(arcade.View):
         for tile in self.player1board:
             # make changes to shopcards, they will move their associated sprites
             if tile.__class__.__name__ == "ShopCard":
-                print("tile type: ", tile.__class__.__name__)
-                tile.set_position_cxy((1000 - tile.position[1], tile.position[0] - 200))
-                print("tile start angle: ", tile.angle)
+                #print("tile type: ", tile.__class__.__name__)
+                tile.set_position_cxy((tile.position[1], tile.position[0] - 50))
+                #print("tile start angle: ", tile.angle)
                 tile.angle = -90
-                print("tile after angle: ", tile.angle)
+                #print("tile after angle: ", tile.angle)
+        
+        for tile in self.player2board:
+            # make changes to shopcards, they will move their associated sprites
+            if tile.__class__.__name__ == "ShopCard":
+                #print("tile type: ", tile.__class__.__name__)
+                tile.set_position_cxy((700  + (800 - tile.position[1]), tile.position[0] - 50))
+                #print("tile start angle: ", tile.angle)
+                tile.angle = 90
+
+                #print("tile after angle: ", tile.angle)
 
 
 
