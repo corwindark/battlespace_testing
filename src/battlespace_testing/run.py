@@ -1,11 +1,15 @@
 #import pandas as pd
 import arcade
 import arcade.csscolor
+import arcade.csscolor
 import arcade.gui
 import random
 import os 
 import cv2
-
+#import battlespace_testing.cards
+#from battlespace_testing import card_data
+#from cards import get_card_dictionary
+import card_data
 
 def image_size(filename):
     """Helper function to get image file size
@@ -38,72 +42,8 @@ shop_vertical_offset = overall_window_size[1] - 100
 shop_width = (shop_tile_width * 3) + ((shop_tile_width * shop_spacing_pct) * 4)
 shop_height = (shop_tile_height + ((shop_tile_height * shop_spacing_vert_pct) * 2))
 
-card_dict = {
-    'turret_1': {
-        'in_shop': True,
-        'sprite_id': 'turret_1',
-        'tier': 1,
-        'hp': 5,
-        'atk': 1,
-        'energy_max': 2,
-        'on_energy_max': ['attack_function'],
-        'on_place_first': ['default'],
-        'on_place_any': ['default'],
-        'on_moved': ['default']  
-    },
-
-    'turret_2': {
-        'in_shop': True,
-        'sprite_id': 'turret_2',
-        'tier': 1,
-        'hp': 5,
-        'atk': 1,
-        'energy_max': 2,
-        'on_energy_max': ['attack_function'],
-        'on_place_first': ['default'],
-        'on_place_any': ['default'],
-        'on_moved': ['default']  
-    },
-
-    'hq_1': {
-        'in_shop': False,
-        'sprite_id': 'hq_1',
-        'tier': 1,
-        'hp': 8,
-        'atk': 0,
-        'energy_max': 0,
-        'on_energy_max': [],
-        'on_place_first': ['default'],
-        'on_place_any': ['default'],
-        'on_moved': ['default']  
-    },
-
-    'lightning_1': {       
-        'sprite_id': 'lightning_1',
-        'hp': 8,
-        'atk': 0
-    },
-    'lightning_2': {       
-        'sprite_id': 'lightning_2',
-        'hp': 8,
-        'atk': 0
-    },
-    'portal_1': {       
-        'sprite_id': 'portal_1',
-        'hp': 8,
-        'atk': 0
-    },
-    'tentacle_1': {       
-        'sprite_id': 'tentacle_1',
-        'hp': 8,
-        'atk': 0
-    },
-    'tentacle_2': {       
-        'sprite_id': 'tentacle_2',
-        'hp': 8,
-        'atk': 0
-    }
-}
+cardret = card_data.card_return()
+card_dict = cardret.get_card_dictionary()
 cardlist = list(card_dict)
 
 
@@ -125,18 +65,24 @@ class ShopCard(arcade.Sprite):
 
         # height, width, number of channels in image
         width = img.shape[1]
-        
         scaleval = TILE_SIZE / width
-
         super().__init__(self.image_file_name, scale= scaleval, hit_box_algorithm = 'None')
         
         # store details of card internally
         self.health = card_data['hp']
         self.attack = card_data['atk']
+        self.max_energy = card_data['max_energy']
+        self.current_energy = 0
+        self.column = 0
+        self.row = 0
 
-        # add details to the card
+
+        # add detail sprites to the card
         self.healthdisplay = arcade.create_text_sprite(text = str(self.health),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25,bold = True,  font_name = "Cooper Black")
         self.attackdisplay = arcade.create_text_sprite(text = str(self.attack),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25, bold = True, font_name = "Henney Future")
+        self.energybar = arcade.SpriteSolidColor(width=TILE_SIZE, height=1, color = arcade.csscolor.DARK_GRAY)
+        self.energybar.alpha = 0
+
 
         # coordinates for hp/atk within the card
         self.HEALTHX = 0.3 * TILE_SIZE
@@ -162,6 +108,9 @@ class ShopCard(arcade.Sprite):
         self.healthdisplay.position = (self.position[0] + self.HEALTHX , self.position[1] - self.HEALTHY) 
         self.attackdisplay.position = (self.position[0] - self.ATTACKX , self.position[1] - self.ATTACKY) 
 
+        self.energybar.position = (self.position[0], self.position[1])
+        self.energybar.top = self.top
+
     def add_to_list(self, targetlist:arcade.SpriteList):
         # helper function to add all the subsprites to the right spritelist
         self.remove_from_sprite_lists()
@@ -171,6 +120,30 @@ class ShopCard(arcade.Sprite):
         targetlist.append(self)
         targetlist.append(self.healthdisplay)
         targetlist.append(self.attackdisplay)
+        targetlist.append(self.energybar)
+
+    def add_energy(self, energy:int, fill:bool = False):
+
+        # add energy to the card's internal data, and adjust the cooldown indicator
+        if fill == True:
+            self.current_energy = self.max_energy
+        else:
+            self.current_energy = self.current_energy + energy
+
+            # make sure energy doesn't go above max
+            if self.current_energy > self.max_energy
+                self.current_energy = self.max_energy
+
+        # update the energybar visual
+        missing_energy = self.max_energy - self.current_energy
+        if missing_energy > 0:
+            self.energybar.alpha = 200
+            self.energybar.height = TILE_SIZE * (missing_energy / self.max_energy)
+        
+
+
+
+
 
 
 
@@ -465,11 +438,15 @@ class ShopView(arcade.View):
                 board_tile_status[self.player_id][cell_id] = self.held_tile[0].card
                 # make the board tile sprite invisible so our card isn't overlapping with it
                 board_tile_sprite[0].alpha = 0
+                # 
 
                 # reset the board tile sprite and player board at the last position
                 if old_position_found:
                     old_board_tile_sprite[0].alpha = 100
                     board_tile_status[self.player_id][old_cell_id] = 'empty'
+
+                # add one energy DEBUG
+                self.held_tile[0].add_energy(1)
 
                 # update the board tiles position and remove it from our 'holding list
                 self.held_tile[0].set_position_cxy(board_tile_sprite[0].position)
@@ -528,7 +505,7 @@ class FightView(arcade.View):
             # make changes to shopcards, they will move their associated sprites
             if tile.__class__.__name__ == "ShopCard":
                 #print("tile type: ", tile.__class__.__name__)
-                tile.set_position_cxy((tile.position[1], tile.position[0] - 50))
+                tile.set_position_cxy((tile.position[1]-75, tile.position[0] - 50))
                 #print("tile start angle: ", tile.angle)
                 tile.angle = -90
                 #print("tile after angle: ", tile.angle)
@@ -543,6 +520,9 @@ class FightView(arcade.View):
 
                 #print("tile after angle: ", tile.angle)
 
+
+    def run_fight(self):
+        pass
 
 
     def on_draw(self):

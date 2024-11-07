@@ -1,1 +1,1 @@
-from battlespace_testing import battlespace_testing
+from battlespace_testing import run
