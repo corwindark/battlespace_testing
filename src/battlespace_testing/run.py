@@ -131,14 +131,16 @@ class ShopCard(arcade.Sprite):
             self.current_energy = self.current_energy + energy
 
             # make sure energy doesn't go above max
-            if self.current_energy > self.max_energy
+            if self.current_energy > self.max_energy:
                 self.current_energy = self.max_energy
+
 
         # update the energybar visual
         missing_energy = self.max_energy - self.current_energy
         if missing_energy > 0:
             self.energybar.alpha = 200
-            self.energybar.height = TILE_SIZE * (missing_energy / self.max_energy)
+            self.energybar.height =1
+            #self.energybar.height = TILE_SIZE * (missing_energy / self.max_energy)
         
 
 
