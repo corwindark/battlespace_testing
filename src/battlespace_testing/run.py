@@ -134,7 +134,6 @@ class ShopCard(arcade.Sprite):
             if self.current_energy > self.max_energy:
                 self.current_energy = self.max_energy
 
-
         # update the energybar visual
         missing_energy = self.max_energy - self.current_energy
         if missing_energy > 0:
