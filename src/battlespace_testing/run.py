@@ -82,6 +82,7 @@ class ShopCard(arcade.Sprite):
         self.attackdisplay = arcade.create_text_sprite(text = str(self.attack),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25, bold = True, font_name = "Henney Future")
         self.energybar = arcade.SpriteSolidColor(width=TILE_SIZE, height=1, color = arcade.csscolor.DARK_GRAY)
         self.energybar.alpha = 0
+        self.show_energy_bar = False
 
 
         # coordinates for hp/atk within the card
