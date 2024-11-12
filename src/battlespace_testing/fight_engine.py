@@ -5,6 +5,4 @@ import arcade.gui
 import random
 import os 
 
-
-
 class fight_engine()
