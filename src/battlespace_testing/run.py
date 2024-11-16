@@ -42,11 +42,9 @@ shop_vertical_offset = overall_window_size[1] - 100
 shop_width = (shop_tile_width * 3) + ((shop_tile_width * shop_spacing_pct) * 4)
 shop_height = (shop_tile_height + ((shop_tile_height * shop_spacing_vert_pct) * 2))
 
-
 cardret = card_data.card_return()
 card_dict = cardret.get_card_dictionary()
 cardlist = list(card_dict)
-
 
 class ShopCard(arcade.Sprite):
     
