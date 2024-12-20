@@ -224,6 +224,9 @@ class ShopView(arcade.View):
         )
 
 
+
+
+
     def on_advance_button(self, event):
         print('button pressed', event)
         if self.next_screen_view == None:
@@ -322,6 +325,26 @@ class ShopView(arcade.View):
                 board_tile_status[self.player_id][count-1] = 'empty'  
 
         
+        # create the HQ room and position it on the board
+        # 1) create the card
+        hq_id = "hq_1"
+        hq_space_id = 18
+        hq_card = ShopCard(hq_id)
+        # 2) identify and hide the board tile where we will move the hq card
+        # loop through background sprites with an index id, and store if we find a match
+        hq_boardspace_sprite = []
+        for i, sprite in enumerate(self.board_spritelist):
+            if i == hq_space_id:
+                hq_boardspace_sprite = sprite
+        board_tile_status[self.player_id][hq_space_id] = hq_id
+        # make the board tile sprite invisible so our card isn't overlapping with it
+        hq_boardspace_sprite.alpha = 0
+
+        # 3) move hq card to the appropriate place
+        hq_card.add_to_list(self.ship_spritelist)
+        # 3) add it to the ship/board list 
+        hq_card.set_position_cxy(hq_boardspace_sprite.position)
+
         # fill the shop with first set of cards
         self.roll_shop(False)
 
@@ -439,7 +462,6 @@ class ShopView(arcade.View):
                 board_tile_status[self.player_id][cell_id] = self.held_tile[0].card
                 # make the board tile sprite invisible so our card isn't overlapping with it
                 board_tile_sprite[0].alpha = 0
-                # 
 
                 # reset the board tile sprite and player board at the last position
                 if old_position_found:
@@ -493,6 +515,9 @@ class FightView(arcade.View):
         self.player2board: arcade.SpriteList
         self.viewShown = False
 
+        # tick to keep track of fight timing
+        self.fight_heartbeat = 0
+
     def on_show_view(self):
 
         self.player1board = self.player1shop.ship_spritelist
@@ -519,8 +544,6 @@ class FightView(arcade.View):
                 #print("tile start angle: ", tile.angle)
                 tile.angle = 90
 
-                #print("tile after angle: ", tile.angle)
-
 
     def run_fight(self):
         pass
@@ -528,11 +551,13 @@ class FightView(arcade.View):
 
     def on_draw(self):
 
-        self.player1board = self.player1shop.ship_spritelist
-        self.player2board = self.player2shop.ship_spritelist
-        
+        # clear view to start each tick clean
         self.clear() 
-
+       
+        # add 1 to internal timer (should be 20 ticks a second)
+        self.fight_heartbeat += 1
+        arcade.draw_text("time: " + str(self.fight_heartbeat), 200, 200, arcade.color.BLACK, font_size= 20, anchor_x= "left")
+ 
         self.player1board.draw()
         self.player2board.draw()
 
@@ -547,7 +572,8 @@ def main():
     fight_view = FightView(shop1_view, shop2_view)
 
     shop2_view.next_screen_view = fight_view    
-    
+    fight_view.next_screen_view = shop1_view
+
     window.show_view(shop1_view)
     arcade.run()
 
