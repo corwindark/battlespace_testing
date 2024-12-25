@@ -254,8 +254,11 @@ class ShopView(arcade.View):
 
             # ADD LOGIC HERE LATER FOR SHOP TIERS AND BUYABLE CARDS
             card_selection = ""
-            card_selection = cardlist[random.randint(0,len(cardlist)-1)]
-            card_data = card_dict[card_selection]
+            while card_selection == "":
+                
+                card_selection = cardlist[random.randint(0,len(cardlist)-1)]
+                if card_selection['']
+                card_data = card_dict[card_selection]
             shop_card = ShopCard(card_selection)
 
             # Handle the placement of the card in the shop
@@ -328,7 +331,7 @@ class ShopView(arcade.View):
         # create the HQ room and position it on the board
         # 1) create the card
         hq_id = "hq_1"
-        hq_space_id = 18
+        hq_space_id = 17
         hq_card = ShopCard(hq_id)
         # 2) identify and hide the board tile where we will move the hq card
         # loop through background sprites with an index id, and store if we find a match

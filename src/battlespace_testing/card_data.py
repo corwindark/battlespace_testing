@@ -45,19 +45,23 @@ card_dict = {
         'on_moved': ['default']  
     },
 
-    'lightning_1': {       
+    'lightning_1': { 
+        'in_shop': True,      
         'sprite_id': 'lightning_1',
         'hp': 8,
         'atk': 0,
         'max_energy': 3
     },
-    'lightning_2': {       
+    'lightning_2': {    
+        'in_shop': True,   
         'sprite_id': 'lightning_2',
         'hp': 8,
         'atk': 0,
         'max_energy': 2
     },
-    'portal_1': {       
+    'portal_1': {
+        
+        'in_shop': True,       
         'sprite_id': 'portal_1',
         'hp': 8,
         'atk': 0,
