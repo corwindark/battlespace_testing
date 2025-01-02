@@ -253,12 +253,18 @@ class ShopView(arcade.View):
         for i in range(1,4):
 
             # ADD LOGIC HERE LATER FOR SHOP TIERS AND BUYABLE CARDS
+            
+            # buyable card logic
             card_selection = ""
             while card_selection == "":
                 
                 card_selection = cardlist[random.randint(0,len(cardlist)-1)]
-                if card_selection['']
                 card_data = card_dict[card_selection]
+
+                if card_data['in_shop'] is False:
+                    card_selection = ""
+                
+                #
             shop_card = ShopCard(card_selection)
 
             # Handle the placement of the card in the shop

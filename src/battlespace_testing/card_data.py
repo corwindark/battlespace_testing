@@ -67,13 +67,15 @@ card_dict = {
         'atk': 0,
         'max_energy': 3
     },
-    'tentacle_1': {       
+    'tentacle_1': {  
+        'in_shop': True,     
         'sprite_id': 'tentacle_1',
         'hp': 8,
         'atk': 0,
         'max_energy': 3
     },
-    'tentacle_2': {       
+    'tentacle_2': { 
+        'in_shop': True,      
         'sprite_id': 'tentacle_2',
         'hp': 8,
         'atk': 0,
