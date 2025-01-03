@@ -557,6 +557,9 @@ class FightView(arcade.View):
     def run_fight(self):
         pass
 
+    def advance_fight(self):
+
+        pass
 
     def on_draw(self):
 
@@ -567,8 +570,18 @@ class FightView(arcade.View):
         self.fight_heartbeat += 1
         arcade.draw_text("time: " + str(self.fight_heartbeat), 200, 200, arcade.color.BLACK, font_size= 20, anchor_x= "left")
  
+        # draw boards
         self.player1board.draw()
         self.player2board.draw()
+
+        # tick speed for fight
+        tickspeed = 5
+
+        if fight_heartbeat %% 5 == 0:
+            advance_fight()
+    
+    
+
 
 
 def main():
