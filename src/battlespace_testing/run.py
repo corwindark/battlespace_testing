@@ -6,6 +6,7 @@ import arcade.gui
 import random
 import os 
 import cv2
+import math
 #import battlespace_testing.cards
 #from battlespace_testing import card_data
 #from cards import get_card_dictionary
@@ -72,8 +73,10 @@ class ShopCard(arcade.Sprite):
         self.attack = card_data['atk']
         self.max_energy = card_data['max_energy']
         self.current_energy = 0
-        self.column = 0
-        self.row = 0
+        # position details for combat
+        self.cell_id: int
+        self.column: int
+        self.row: int
 
 
         # add detail sprites to the card
@@ -223,10 +226,6 @@ class ShopView(arcade.View):
                 child=self.v_box)
         )
 
-
-
-
-
     def on_advance_button(self, event):
         print('button pressed', event)
         if self.next_screen_view == None:
@@ -283,6 +282,16 @@ class ShopView(arcade.View):
     def on_reroll_button(self, xys):
         print("reroll button ")
         self.roll_shop(True)
+
+    def place_card_on_board(self, card_obj, cell_id):
+        # To Do: update function to include all placement details
+
+        # record the row and column of the card internally
+        card_obj.cell_id = cell_id
+        card_obj.column = cell_id % 6
+        card_obj.row = math.floor(cell_id / 6)
+    
+        print('placed card at row: ', card_obj.row, ' and column: ', card_obj.column )
 
     def on_show_view(self):
         arcade.set_background_color(arcade.color.WHITE)
@@ -349,10 +358,13 @@ class ShopView(arcade.View):
         # make the board tile sprite invisible so our card isn't overlapping with it
         hq_boardspace_sprite.alpha = 0
 
-        # 3) move hq card to the appropriate place
+        # 3) add  hq card to the appropriate list
         hq_card.add_to_list(self.ship_spritelist)
-        # 3) add it to the ship/board list 
+        # 3) move card to the correct location 
         hq_card.set_position_cxy(hq_boardspace_sprite.position)
+
+        # record card position in card object's internal data
+        self.place_card_on_board(hq_card, hq_space_id)
 
         # fill the shop with first set of cards
         self.roll_shop(False)
@@ -376,8 +388,6 @@ class ShopView(arcade.View):
             shopcard.add_to_list(self.ship_spritelist)
 
             print(self.shop_spritelist)
-
-
 
         return purchase_success
 
@@ -467,10 +477,13 @@ class ShopView(arcade.View):
                 # place tile on board
                 print(board_tile_status[self.player_id])
                 print("placing card: ", self.held_tile[0].card, " at: ", cell_id )
+
                 # put the string ID of the card into the player's board
                 board_tile_status[self.player_id][cell_id] = self.held_tile[0].card
                 # make the board tile sprite invisible so our card isn't overlapping with it
                 board_tile_sprite[0].alpha = 0
+                # record board position in card's internal data
+                self.place_card_on_board()
 
                 # reset the board tile sprite and player board at the last position
                 if old_position_found:
@@ -505,7 +518,6 @@ class ShopView(arcade.View):
         money_text = "$" + str(self.money)
         arcade.draw_text(money_text, overall_window_size[0]/10, 700, arcade.color.BLACK, font_size= 20, anchor_x= "left")
 
-
         # display sprites
         self.manager.draw()
         self.background_spritelist.draw()
@@ -516,27 +528,66 @@ class ShopView(arcade.View):
 
 class FightView(arcade.View):
 
-    def __init__(self, playeroneshop, playertwoshop):
+    def __init__(self, playeroneshopview, playertwoshopview):
         super().__init__()
-        self.player1shop = playeroneshop
-        self.player2shop = playertwoshop
-        self.player1board: arcade.SpriteList
-        self.player2board: arcade.SpriteList
+        self.player1shop = playeroneshopview
+        self.player2shop = playertwoshopview
+        self.player1_board_sprites: arcade.SpriteList
+        self.player2_board_sprites: arcade.SpriteList
         self.viewShown = False
+
+        # these are the dictionaries that hold all fight data in one place 
+        # {obj_n: {'player':int, 'row':0, 'col':1, 'sprite':sprite_from_board, 'hp':sprite_hp, 'atk': sprite_atk}}
+        self.player_board_data = {}
 
         # tick to keep track of fight timing
         self.fight_heartbeat = 0
 
+    def build_board_objects(self):
+        
+        # add cards from playerboards to data structure
+        for playernum, playerboard in enumerate([self.player1_board_sprites, self.player2_board_sprites]):
+            for card_obj in playerboard:
+
+                # only proceede if sprite is a shopcard
+                if card_obj.__class__.__name__ != "ShopCard": 
+                    continue
+
+                # create data object to add to dictionary
+                card_data = {
+                    'player': playernum,
+                    'row': card_obj.row,
+                    'col': card_obj.column,
+                    'cell_id': card_obj.cell_id,
+                    'sprite_id': card_obj.card,
+                    'hp': card_obj.health,
+                    'atk': card_obj.attack
+                }
+
+                # unique string to use as key in dictionary (mostly wont reference this)
+                # format cardname_p[playernum]_c[col]_r[row]
+                # i.e.: turret1_p1_c2_r1
+                uq_str = card_data['sprite_id'] + \
+                    '_p' + str(card_data['player']) + \
+                          '_c' + str(card_data['col']) +  \
+                            '_c' + str(card_data['row'])
+                
+                print('added uq str: ', uq_str)
+
+                # add data objects to overall game state data list
+                self.player_board_data[uq_str] = card_data
+           
+
+
     def on_show_view(self):
 
-        self.player1board = self.player1shop.ship_spritelist
-        self.player2board = self.player2shop.ship_spritelist
+        self.player1_board_sprites = self.player1shop.ship_spritelist
+        self.player2_board_sprites = self.player2shop.ship_spritelist
 
         self.viewShown = True
 
-
         # rotate boards
-        for tile in self.player1board:
+        for tile in self.player1_board_sprites:
             # make changes to shopcards, they will move their associated sprites
             if tile.__class__.__name__ == "ShopCard":
                 #print("tile type: ", tile.__class__.__name__)
@@ -545,7 +596,7 @@ class FightView(arcade.View):
                 tile.angle = -90
                 #print("tile after angle: ", tile.angle)
         
-        for tile in self.player2board:
+        for tile in self.player2_board_sprites:
             # make changes to shopcards, they will move their associated sprites
             if tile.__class__.__name__ == "ShopCard":
                 #print("tile type: ", tile.__class__.__name__)
@@ -553,11 +604,39 @@ class FightView(arcade.View):
                 #print("tile start angle: ", tile.angle)
                 tile.angle = 90
 
+        self.build_board_objects()
 
-    def run_fight(self):
-        pass
 
     def advance_fight(self):
+
+        # check validity of board
+            # board tiles sorted into "active," "destroyed," "disconnected" lists
+
+        # get turn number
+
+        # if first turn
+            # decide first and second player
+            # do any start of fight effects
+
+        # activation stage, for each player
+        # repeat below for each row
+            # check current player's first row for tiles
+            # if no tiles continue to next player
+            # if tiles, loop through tiles
+                # call their activation function 
+                # card activation functions should take in board state and return board state changes?
+                    # change return something like (target location, change type ["attack", "heal", "replace"], animationID )
+
+                # then this function makes and animates the changes
+                    # animate heal function
+                    # animate attack function
+                
+                # check if tiles destroyed and update lists
+                # check after attack if game won, exit if it has been
+
+            # once all tiles and hits calculated
+
+
 
         pass
 
@@ -571,16 +650,17 @@ class FightView(arcade.View):
         arcade.draw_text("time: " + str(self.fight_heartbeat), 200, 200, arcade.color.BLACK, font_size= 20, anchor_x= "left")
  
         # draw boards
-        self.player1board.draw()
-        self.player2board.draw()
+        self.player1_board_sprites.draw()
+        self.player2_board_sprites.draw()
 
         # tick speed for fight
         tickspeed = 5
 
-        if fight_heartbeat %% 5 == 0:
-            advance_fight()
+        if self.fight_heartbeat % 5 == 0:
+
+            self.advance_fight()
     
-    
+
 
 
 
