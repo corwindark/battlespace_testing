@@ -5,6 +5,31 @@ import arcade.gui
 import random
 import os 
 
+def get_first_enemy_card_in_same_row(acting_card, boardstate):
+    # function will automatically target next column over if needed
+
+    # loop through board tiles to get tile with lowest row in same column
+
+    # if no tile in same column, move towards middle (3)
+
+
+
+def turret_1_activation(acting_turret, boardstate):
+    # this function is for the turret_1 card
+    # it detailsi how the card will fun
+
+    print('turret activation function triggered')
+
+    tiles = 0
+    for obj in boardstate:
+        tiles += 1
+    
+    print('boardstate has ', tiles, ' tiles')
+    print('triggered turret has: ', acting_turret.attack, ' attack') 
+
+    # return type for activation functions ()
+
+
 card_dict = {
     'turret_1': {
         'in_shop': True,
@@ -16,7 +41,7 @@ card_dict = {
         'on_energy_max': ['attack_function'],
         'on_place_first': ['default'],
         'on_place_any': ['default'],
-        'on_moved': ['default']  
+        'on_moved': ['default'],
     },
 
     'turret_2': {
@@ -93,4 +118,11 @@ class card_return():
         Returns:
             dictionary: dictionary of the data needed to run cards objects 
         """
+
+
         return card_dict
+    
+
+# dummy setup to test activation functions
+for item in card_dict:
+    card_dict[item]['act_function'] = turret_1_activation

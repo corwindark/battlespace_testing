@@ -78,7 +78,6 @@ class ShopCard(arcade.Sprite):
         self.column: int
         self.row: int
 
-
         # add detail sprites to the card
         self.healthdisplay = arcade.create_text_sprite(text = str(self.health),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25,bold = True,  font_name = "Cooper Black")
         self.attackdisplay = arcade.create_text_sprite(text = str(self.attack),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25, bold = True, font_name = "Henney Future")
@@ -86,12 +85,14 @@ class ShopCard(arcade.Sprite):
         self.energybar.alpha = 0
         self.show_energy_bar = False
 
-
         # coordinates for hp/atk within the card
         self.HEALTHX = 0.3 * TILE_SIZE
         self.HEALTHY = 0.35 * TILE_SIZE
         self.ATTACKX = 0.3 * TILE_SIZE
         self.ATTACKY = 0.35 * TILE_SIZE
+
+        # this is the function triggered when card activated
+        self.act_function = card_data['act_function']
 
     def set_position_topleft(self, top, left):
         # helper function to move all the subsprites with the tile
@@ -200,9 +201,6 @@ class ShopView(arcade.View):
         # these variables store values needed for the dragging-dropping placement of store tiles
         self.held_tile_original_position = []
         self.held_tile = []
-
-        # this is the table of 
-
 
         # add end turn button (should advance to next player window, or to combat)
         end_turn_button = arcade.gui.UIFlatButton(text="End Turn", width=200)
@@ -483,7 +481,7 @@ class ShopView(arcade.View):
                 # make the board tile sprite invisible so our card isn't overlapping with it
                 board_tile_sprite[0].alpha = 0
                 # record board position in card's internal data
-                self.place_card_on_board()
+                self.place_card_on_board(self.held_tile[0], cell_id)
 
                 # reset the board tile sprite and player board at the last position
                 if old_position_found:
@@ -542,6 +540,13 @@ class FightView(arcade.View):
 
         # tick to keep track of fight timing
         self.fight_heartbeat = 0
+        # step to keep track of fight resolution
+        self.fight_step = 0
+        # keep track of which player is first
+        self.player_order = [0,1]
+
+        # spritelist for effects that appear and disapear (bullets, green activation flash)
+        self.fx_spritelist: arcade.SpriteList
 
     def build_board_objects(self):
         
@@ -561,7 +566,8 @@ class FightView(arcade.View):
                     'cell_id': card_obj.cell_id,
                     'sprite_id': card_obj.card,
                     'hp': card_obj.health,
-                    'atk': card_obj.attack
+                    'atk': card_obj.attack,
+                    'object': card_obj
                 }
 
                 # unique string to use as key in dictionary (mostly wont reference this)
@@ -607,7 +613,15 @@ class FightView(arcade.View):
         self.build_board_objects()
 
 
-    def advance_fight(self):
+    def advance_fight(self, step = None):
+        
+
+        # indexes that store the current point in time of the fight resolver (given that this is a 'step' function)
+        # use stored value unless (for debug) we want to see a particular step
+        if step == None:
+            step = self.fight_step
+
+        print('CHECKING STEP: ', step)
 
         # check validity of board
             # board tiles sorted into "active," "destroyed," "disconnected" lists
@@ -615,17 +629,61 @@ class FightView(arcade.View):
         # get turn number
 
         # if first turn
-            # decide first and second player
-            # do any start of fight effects
+        if step == 0:
+            # decide and store first and second player
+            first_player = random.randint(0,1)
+            player_order = [first_player, 1 - first_player]
+            self.player_order = player_order
+
+            # do any start of fight effects here
+            # NOT CREATED ANY ATM
+
+        # variable that tracks where in function to trigger given the input step value
+        req_step = 0
 
         # activation stage, for each player
+        for player_number in self.player_order:
+
+            # loop through positions on board from first row moving back, left to right
+            for row in range(0,5):
+                for column in range(0,7):
+
+                    # check if given row-column placement has a board tile in it to trigger
+                    activated_board_obj = None
+                    for name, board_obj_data in self.player_board_data.items():
+
+                        if board_obj_data['player'] == player_number and board_obj_data['row'] == row and board_obj_data['col'] == column:
+                           
+                            activated_board_obj = board_obj_data['object']
+                    
+                    # move to next cell if no board object found
+                    if activated_board_obj == None:
+                        continue
+
+                    # each activatable tile is a new step increased by 1 from the previous
+                    req_step += 1
+
+                    # exit loop if we have passed the current step
+                    if req_step > step:
+                        break
+
+
+                    if req_step == step:
+
+                        # call tile's activation function 
+                        print('STEP TRIGGERED FOR: ', req_step)
+
+                        # card activation functions take in board state and return board state changes
+                        # change return form of (target location, change type ["attack", "heal", "replace"], animationID )
+                        activated_board_obj.act_function(activated_board_obj, self.player_board_data)                    
+
+
         # repeat below for each row
+
             # check current player's first row for tiles
             # if no tiles continue to next player
             # if tiles, loop through tiles
-                # call their activation function 
-                # card activation functions should take in board state and return board state changes?
-                    # change return something like (target location, change type ["attack", "heal", "replace"], animationID )
+                
 
                 # then this function makes and animates the changes
                     # animate heal function
@@ -638,7 +696,8 @@ class FightView(arcade.View):
 
 
 
-        pass
+        # update so next function call will trigger on the next step
+        self.fight_step += 1
 
     def on_draw(self):
 
@@ -654,9 +713,9 @@ class FightView(arcade.View):
         self.player2_board_sprites.draw()
 
         # tick speed for fight
-        tickspeed = 5
+        tickspeed = 40
 
-        if self.fight_heartbeat % 5 == 0:
+        if self.fight_heartbeat % tickspeed == 0:
 
             self.advance_fight()
     
