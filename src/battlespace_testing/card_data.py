@@ -4,11 +4,45 @@ import arcade.csscolor
 import arcade.gui
 import random
 import os 
+import math
 
 def get_first_enemy_card_in_same_row(acting_card, boardstate):
     # function will automatically target next column over if needed
 
-    # loop through board tiles to get tile with lowest row in same column
+    target_col = acting_card['object'].column
+    # str value of the UQ id of card to target
+    returned_target = ""
+    
+    # wrapped in a while loop until we have checked all the columns to the middle (col 3)
+    while returned_target == "" and abs(target_col - 3) > 0:
+       
+        # loop through board tiles to get tile with lowest row in same column
+        # store lowest row
+        lowest_row = 5
+        for key, tile in boardstate.items():
+            # only look for enemy tiles
+            if tile['player'] == acting_card['player']:
+                continue
+            
+            # if we find a new closest valid target, store it
+            if tile['col'] == target_col and tile['row'] < lowest_row:   
+                lowest_row = tile['row']
+                returned_target = key
+
+        # if we didn't find in the previous column, move target column closer to the center
+        if returned_target  == "":
+            if target_col > 3:
+                target_col -= 1
+            elif target_col < 3:
+                target_col += 1
+    
+    if returned_target == "":
+        print("ERROR NO TARGET FOUND by: ", acting_card.card)
+        print("FIGHT MIGHT HAVE ENDED ALREADY")
+        return
+    else:
+        return returned_target
+
 
     # if no tile in same column, move towards middle (3)
 
@@ -18,16 +52,19 @@ def turret_1_activation(acting_turret, boardstate):
     # this function is for the turret_1 card
     # it detailsi how the card will fun
 
-    print('turret activation function triggered')
-
-    tiles = 0
-    for obj in boardstate:
-        tiles += 1
-    
-    print('boardstate has ', tiles, ' tiles')
-    print('triggered turret has: ', acting_turret.attack, ' attack') 
+    print('activation function triggered')
 
     # return type for activation functions ()
+    targeted_card = get_first_enemy_card_in_same_row(acting_turret, boardstate)
+
+    # change return form of list of [(target uq_id, change type ["attack", "heal", "replace"], animationID )]
+    attack_dict = {'author_id': ,'target_id': targeted_card, 'action': 'attack', 'amount': acting_turret['object'].attack}
+
+    print(attack_dict)
+
+    return [attack_dict]
+
+
 
 
 card_dict = {

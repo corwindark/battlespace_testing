@@ -613,7 +613,7 @@ class FightView(arcade.View):
         self.build_board_objects()
 
 
-    def advance_fight(self, step = None):
+    def advance_fight(self, step = None, update_board = True):
         
 
         # indexes that store the current point in time of the fight resolver (given that this is a 'step' function)
@@ -638,6 +638,9 @@ class FightView(arcade.View):
             # do any start of fight effects here
             # NOT CREATED ANY ATM
 
+        # this list stores all the attacks/heals etc. that are returned by the cards activated on this step, so they can be resolved
+        board_updates = []
+
         # variable that tracks where in function to trigger given the input step value
         req_step = 0
 
@@ -654,7 +657,7 @@ class FightView(arcade.View):
 
                         if board_obj_data['player'] == player_number and board_obj_data['row'] == row and board_obj_data['col'] == column:
                            
-                            activated_board_obj = board_obj_data['object']
+                            activated_board_obj = board_obj_data
                     
                     # move to next cell if no board object found
                     if activated_board_obj == None:
@@ -674,29 +677,33 @@ class FightView(arcade.View):
                         print('STEP TRIGGERED FOR: ', req_step)
 
                         # card activation functions take in board state and return board state changes
-                        # change return form of (target location, change type ["attack", "heal", "replace"], animationID )
-                        activated_board_obj.act_function(activated_board_obj, self.player_board_data)                    
+                        # change return form of [(target uqid, change type ["attack", "heal", "replace"], animationID )]
+                        returned_actions = activated_board_obj['object'].act_function(activated_board_obj, self.player_board_data)   
 
-
-        # repeat below for each row
-
-            # check current player's first row for tiles
-            # if no tiles continue to next player
-            # if tiles, loop through tiles
-                
-
-                # then this function makes and animates the changes
-                    # animate heal function
-                    # animate attack function
-                
-                # check if tiles destroyed and update lists
-                # check after attack if game won, exit if it has been
-
-            # once all tiles and hits calculated
+                        # as the object returned above may have different lengths, we loop through and append to the board_updated variable declared above
+                        for action in returned_actions:
+                            board_updates.append(action)
+        
+        
+        
+        # After triggering the current step, this function resolves/updates the board, and animates the changes
+        for update in board_updates:
 
 
 
-        # update so next function call will trigger on the next step
+            # animation portion
+            if update['action'] == 'attack':
+
+
+                self.fx_spritelist
+
+
+        # once all tiles and hits calculated                
+        # check if tiles destroyed and update lists
+        # check after attack if game won, exit if it has been
+
+
+        # update fight step so next function call will trigger the next action in the fight
         self.fight_step += 1
 
     def on_draw(self):
