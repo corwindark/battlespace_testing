@@ -14,30 +14,45 @@ def get_first_enemy_card_in_same_row(acting_card, boardstate):
     returned_target = ""
     
     # wrapped in a while loop until we have checked all the columns to the middle (col 3)
-    while returned_target == "" and abs(target_col - 3) > 0:
+    while returned_target == "":
        
+        print('checking column: ', target_col, ' for: ', acting_card['uq_id'], "player: ", acting_card['player'])
         # loop through board tiles to get tile with lowest row in same column
         # store lowest row
         lowest_row = 5
+
         for key, tile in boardstate.items():
+
+            
             # only look for enemy tiles
             if tile['player'] == acting_card['player']:
                 continue
             
+            print(key, tile['col'], target_col, tile['row'], lowest_row)
+
             # if we find a new closest valid target, store it
-            if tile['col'] == target_col and tile['row'] < lowest_row:   
+            if tile['col'] == target_col and tile['row'] < lowest_row:
+
+                print('target found')
+
                 lowest_row = tile['row']
                 returned_target = key
 
+    
+
         # if we didn't find in the previous column, move target column closer to the center
         if returned_target  == "":
-            if target_col > 3:
+            # if we are checking center and no HQ column, then exit and accept we have no valid target
+            if target_col == 3:
+                print("nothing in center column")
+                break
+            elif target_col > 3:
                 target_col -= 1
             elif target_col < 3:
                 target_col += 1
     
     if returned_target == "":
-        print("ERROR NO TARGET FOUND by: ", acting_card.card)
+        print("ERROR NO TARGET FOUND by: ", acting_card['uq_id'])
         print("FIGHT MIGHT HAVE ENDED ALREADY")
         return
     else:
@@ -58,9 +73,10 @@ def turret_1_activation(acting_turret, boardstate):
     targeted_card = get_first_enemy_card_in_same_row(acting_turret, boardstate)
 
     # change return form of list of [(target uq_id, change type ["attack", "heal", "replace"], animationID )]
-    attack_dict = {'author_id': ,'target_id': targeted_card, 'action': 'attack', 'amount': acting_turret['object'].attack}
+    attack_dict = {'author_id': acting_turret['uq_id'],'target_id': targeted_card, 'action': 'attack', 'amount': acting_turret['object'].attack}
 
     print(attack_dict)
+
 
     return [attack_dict]
 

@@ -286,8 +286,8 @@ class ShopView(arcade.View):
 
         # record the row and column of the card internally
         card_obj.cell_id = cell_id
-        card_obj.column = cell_id % 6
-        card_obj.row = math.floor(cell_id / 6)
+        card_obj.column = ((cell_id + 1) % 7)-1
+        card_obj.row = math.ceil((cell_id+1) / 7)
     
         print('placed card at row: ', card_obj.row, ' and column: ', card_obj.column )
 
@@ -532,6 +532,9 @@ class FightView(arcade.View):
         self.player2shop = playertwoshopview
         self.player1_board_sprites: arcade.SpriteList
         self.player2_board_sprites: arcade.SpriteList
+        # spritelist for effects that appear and disapear (bullets, green activation flash)
+        self.fx_spritelist = arcade.SpriteList()
+
         self.viewShown = False
 
         # these are the dictionaries that hold all fight data in one place 
@@ -545,8 +548,7 @@ class FightView(arcade.View):
         # keep track of which player is first
         self.player_order = [0,1]
 
-        # spritelist for effects that appear and disapear (bullets, green activation flash)
-        self.fx_spritelist: arcade.SpriteList
+
 
     def build_board_objects(self):
         
@@ -576,9 +578,12 @@ class FightView(arcade.View):
                 uq_str = card_data['sprite_id'] + \
                     '_p' + str(card_data['player']) + \
                           '_c' + str(card_data['col']) +  \
-                            '_c' + str(card_data['row'])
+                            '_r' + str(card_data['row'])
                 
                 print('added uq str: ', uq_str)
+
+                # add obj string inside obj so we can reference it later
+                card_data['uq_id'] = uq_str
 
                 # add data objects to overall game state data list
                 self.player_board_data[uq_str] = card_data
@@ -622,6 +627,9 @@ class FightView(arcade.View):
             step = self.fight_step
 
         print('CHECKING STEP: ', step)
+
+        # update FX sprites from last step to disappear
+        self.fx_spritelist = arcade.SpriteList()
 
         # check validity of board
             # board tiles sorted into "active," "destroyed," "disconnected" lists
@@ -685,17 +693,42 @@ class FightView(arcade.View):
                             board_updates.append(action)
         
         
-        
+        #print(board_obj_data)
+
         # After triggering the current step, this function resolves/updates the board, and animates the changes
         for update in board_updates:
-
-
+            
+            acting_sprite = self.player_board_data[update['author_id']]['object']
+            target_sprite = self.player_board_data[update['target_id']]['object']
 
             # animation portion
             if update['action'] == 'attack':
 
+                # create a line sprite positioned at the acting sprite of length to reach the target
+                for i in range(0,21):
+                    
+                    # we are doing a dotted line because I cannot figure out how to do cframes in this game
+                    #dist = arcade.get_distance_between_sprites(target_sprite,  acting_sprite)
+                    targetline = arcade.SpriteSolidColor(width = 7, height = 7, color = arcade.csscolor.RED)
+                    targetline.left = acting_sprite.center_x
+                    targetline.top = acting_sprite.center_y
 
-                self.fx_spritelist
+                    # calculate the angle needed to connect the line to the target sprite
+                    new_x = acting_sprite.center_x - (( (acting_sprite.center_x - target_sprite.center_x)/20) * i)
+                    new_y = acting_sprite.center_y - (( (acting_sprite.center_y - target_sprite.center_y)/20) * i)
+                    targetline.center_x = new_x
+                    targetline.center_y = new_y
+                    #angle = math.atan2(y_diff, x_diff)
+                    #targetline.radians =  angle
+
+                    # add target line to FX spritelist that is wiped every step
+                    self.fx_spritelist.append(targetline)
+
+
+
+
+
+                
 
 
         # once all tiles and hits calculated                
@@ -718,6 +751,8 @@ class FightView(arcade.View):
         # draw boards
         self.player1_board_sprites.draw()
         self.player2_board_sprites.draw()
+        # draw fx
+        self.fx_spritelist.draw()
 
         # tick speed for fight
         tickspeed = 40
