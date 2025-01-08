@@ -16,7 +16,6 @@ def get_first_enemy_card_in_same_row(acting_card, boardstate):
     # wrapped in a while loop until we have checked all the columns to the middle (col 3)
     while returned_target == "":
        
-        print('checking column: ', target_col, ' for: ', acting_card['uq_id'], "player: ", acting_card['player'])
         # loop through board tiles to get tile with lowest row in same column
         # store lowest row
         lowest_row = 5
@@ -28,12 +27,8 @@ def get_first_enemy_card_in_same_row(acting_card, boardstate):
             if tile['player'] == acting_card['player']:
                 continue
             
-            print(key, tile['col'], target_col, tile['row'], lowest_row)
-
             # if we find a new closest valid target, store it
             if tile['col'] == target_col and tile['row'] < lowest_row:
-
-                print('target found')
 
                 lowest_row = tile['row']
                 returned_target = key
@@ -44,7 +39,6 @@ def get_first_enemy_card_in_same_row(acting_card, boardstate):
         if returned_target  == "":
             # if we are checking center and no HQ column, then exit and accept we have no valid target
             if target_col == 3:
-                print("nothing in center column")
                 break
             elif target_col > 3:
                 target_col -= 1
@@ -67,16 +61,11 @@ def turret_1_activation(acting_turret, boardstate):
     # this function is for the turret_1 card
     # it detailsi how the card will fun
 
-    print('activation function triggered')
-
     # return type for activation functions ()
     targeted_card = get_first_enemy_card_in_same_row(acting_turret, boardstate)
 
     # change return form of list of [(target uq_id, change type ["attack", "heal", "replace"], animationID )]
-    attack_dict = {'author_id': acting_turret['uq_id'],'target_id': targeted_card, 'action': 'attack', 'amount': acting_turret['object'].attack}
-
-    print(attack_dict)
-
+    attack_dict = {'author_id': acting_turret['uq_id'], 'player_id' : acting_turret['player'],'target_id': targeted_card, 'action': 'attack', 'amount': acting_turret['object'].attack}
 
     return [attack_dict]
 

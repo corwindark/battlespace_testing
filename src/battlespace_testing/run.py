@@ -709,6 +709,8 @@ class FightView(arcade.View):
                     
                     # we are doing a dotted line because I cannot figure out how to do cframes in this game
                     #dist = arcade.get_distance_between_sprites(target_sprite,  acting_sprite)
+                    if update['player_id'] == 0:
+                        
                     targetline = arcade.SpriteSolidColor(width = 7, height = 7, color = arcade.csscolor.RED)
                     targetline.left = acting_sprite.center_x
                     targetline.top = acting_sprite.center_y
