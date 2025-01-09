@@ -707,11 +707,12 @@ class FightView(arcade.View):
                 # create a line sprite positioned at the acting sprite of length to reach the target
                 for i in range(0,21):
                     
-                    # we are doing a dotted line because I cannot figure out how to do cframes in this game
+                    # we are doing a dotted line because I cannot figure out how to do cframes in this medium lol
                     #dist = arcade.get_distance_between_sprites(target_sprite,  acting_sprite)
+                    linecolor = arcade.csscolor.RED
                     if update['player_id'] == 0:
-                        
-                    targetline = arcade.SpriteSolidColor(width = 7, height = 7, color = arcade.csscolor.RED)
+                        linecolor = arcade.csscolor.BLUE
+                    targetline = arcade.SpriteSolidColor(width = 7, height = 7, color = linecolor)
                     targetline.left = acting_sprite.center_x
                     targetline.top = acting_sprite.center_y
 
