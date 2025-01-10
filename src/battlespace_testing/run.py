@@ -910,20 +910,21 @@ class FightView(arcade.View):
                 
                 ### ANIMATION SECTION
                 # create a line sprite positioned at the acting sprite of length to reach the target
-                for i in range(0,21):
+                for i in range(0,31):
                     
                     # we are doing a dotted line because I cannot figure out how to do cframes in this medium lol
                     #dist = arcade.get_distance_between_sprites(target_sprite,  acting_sprite)
                     linecolor = arcade.csscolor.RED
                     if update['player_id'] == 0:
                         linecolor = arcade.csscolor.BLUE
-                    targetline = arcade.SpriteSolidColor(width = 7, height = 7, color = linecolor)
+                    targetline = arcade.SpriteSolidColor(width = 20 - int(i/2), height = 20 - int(i/2), color = linecolor)
+                    targetline.alpha = 200
                     targetline.left = acting_sprite.center_x
                     targetline.top = acting_sprite.center_y
 
                     # calculate the angle needed to connect the line to the target sprite
-                    new_x = acting_sprite.center_x - (( (acting_sprite.center_x - target_sprite.center_x)/20) * i)
-                    new_y = acting_sprite.center_y - (( (acting_sprite.center_y - target_sprite.center_y)/20) * i)
+                    new_x = acting_sprite.center_x - (( (acting_sprite.center_x - target_sprite.center_x)/30) * i)
+                    new_y = acting_sprite.center_y - (( (acting_sprite.center_y - target_sprite.center_y)/30) * i)
                     targetline.center_x = new_x
                     targetline.center_y = new_y
                     #angle = math.atan2(y_diff, x_diff)
