@@ -10,6 +10,7 @@ import math
 #from battlespace_testing import card_data
 #from cards import get_card_dictionary
 import card_data
+import copy
 
 def image_size(filename):
     """Helper function to get image file size
@@ -144,7 +145,9 @@ class ShopCard(arcade.Sprite):
             # add new health text
             self.healthdisplay = arcade.create_text_sprite(text = str(self.health),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25,bold = True,  font_name = "Cooper Black")
             self.healthdisplay.position = saved_hp_position
-            self.current_sprite_list.append(self.healthdisplay)
+
+            if hasattr(self, 'current_sprite_list'):
+                self.current_sprite_list.append(self.healthdisplay)
 
         # same function as above but for attack    
         if delta != 0 and stat == "attack":
@@ -157,7 +160,9 @@ class ShopCard(arcade.Sprite):
             # add new health text
             self.attackdisplay = arcade.create_text_sprite(text = str(self.attack),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25,bold = True,  font_name = "Cooper Black")
             self.attackdisplay.position = saved_atk_position
-            self.current_sprite_list.append(self.attackdisplay)
+
+            if hasattr(self, 'current_sprite_list'):
+                self.current_sprite_list.append(self.attackdisplay)
             
 
     def add_energy(self, energy:int, fill:bool = False):
@@ -179,11 +184,32 @@ class ShopCard(arcade.Sprite):
             self.energybar.height =1
             #self.energybar.height = TILE_SIZE * (missing_energy / self.max_energy)
     
+    def place_card_on_board(self, cell_id):
+        # To Do: update function to include all placement details
+
+        # record the row and column of the card internally
+        self.cell_id = cell_id
+        self.column = ((cell_id) % 7)
+        self.row = math.floor((cell_id) / 7)
+
+        print('placed: ', self.card, ' at cell/column/row: ', self.cell_id, "/", self.column, "/", self.row)
+
     def hide_sprite(self):
         #make sprites invisible
         self.alpha = 0
         self.healthdisplay.alpha = 0
         self.attackdisplay.alpha = 0
+
+    def become_cheap_copy(self, otherShopCard):
+        # otherShopCard should be a ShopCard
+        # copies position, health and attack from other input card
+        self.set_position_cxy(otherShopCard.position)
+        self.angle = otherShopCard.angle
+        self.change_stats('health', otherShopCard.health - self.health)
+        self.change_stats('attack', otherShopCard.attack - self.attack)
+        self.place_card_on_board(otherShopCard.cell_id)
+
+
 
 
 class BoardTile(arcade.Sprite):
@@ -209,6 +235,10 @@ class ShopView(arcade.View):
         super().__init__()
         self.player_id = playernum
         self.next_screen_view = next_screen_view
+        # record if this is the first time the view has been shown
+        self.first_time_shown = True
+        # record which turn this is
+        self.turn = 0
         # list to hold base sprites
         self.background_spritelist: arcade.SpriteList = arcade.SpriteList()
         # list to hold shop sprites
@@ -310,89 +340,88 @@ class ShopView(arcade.View):
     def on_reroll_button(self, xys):
         print("reroll button ")
         self.roll_shop(True)
-
-    def place_card_on_board(self, card_obj, cell_id):
-        # To Do: update function to include all placement details
-
-        # record the row and column of the card internally
-        card_obj.cell_id = cell_id
-        card_obj.column = ((cell_id) % 7)
-        card_obj.row = math.floor((cell_id) / 7)
     
-        print('placed card at cellID', cell_id, ' row: ', card_obj.row, ' and column: ', card_obj.column )
 
     def on_show_view(self):
-        arcade.set_background_color(arcade.color.WHITE)
+
         self.manager.enable()
+        # keep track of what turn it is
+        self.turn += 1
 
-        # setup the list of "placemat" sprites
-        shop = arcade.SpriteSolidColor(int(shop_width), int(shop_height), arcade.csscolor.DARK_OLIVE_GREEN )
-        shop.left = shop_horizontal_offset
-        shop.top = shop_vertical_offset
-        self.background_spritelist.append(shop)
+        if self.first_time_shown == True:
 
-        tile_vertical_position = shop_vertical_offset - (shop_spacing_vert_pct * shop_tile_height)
-        # build shop tile location mats
-        for i in range(1,4):
-            
-            x_pos_calc = (shop_horizontal_offset + (shop_spacing_pct*shop_tile_width *i) + (shop_tile_width * (i-1)))
-            tile = arcade.SpriteSolidColor(int(shop_tile_width), int(shop_tile_height), arcade.csscolor.LIGHT_SEA_GREEN )
-            tile.left = x_pos_calc
-            tile.top = tile_vertical_position
-            self.background_spritelist.append(tile)
+            arcade.set_background_color(arcade.color.WHITE)
 
-        # set up the board placement sprites
-        rows = ['a','b','c','d','e']
-        lanes = ['1','2','3','4','5','6','7']
-        
-        # place the board in relation to the shop
-        board_offset_vert = shop_vertical_offset - 650 + (tile_height * 4)
-        board_offset_hor = 200 + (tile_width * 6)
+            # setup the list of "placemat" sprites
+            shop = arcade.SpriteSolidColor(int(shop_width), int(shop_height), arcade.csscolor.DARK_OLIVE_GREEN )
+            shop.left = shop_horizontal_offset
+            shop.top = shop_vertical_offset
+            self.background_spritelist.append(shop)
 
-        count = 0
-        for j,row in enumerate(rows):
-            for k, lane in enumerate(lanes):
-
-                # make the board alternating colors
-                tilecolor = arcade.csscolor.LIGHT_GRAY
-                if count % 2 == 0:
-                    tilecolor = arcade.csscolor.GRAY
-                count += 1
-
-                y_pos_calc = board_offset_vert - (tile_height * j)
-                x_pos_calc = (board_offset_hor -  (tile_width * k) )
-
-                tile = arcade.SpriteSolidColor(int(tile_width), int(tile_height), tilecolor )
-                tile.alpha = 100
+            tile_vertical_position = shop_vertical_offset - (shop_spacing_vert_pct * shop_tile_height)
+            # build shop tile location mats
+            for i in range(1,4):
+                
+                x_pos_calc = (shop_horizontal_offset + (shop_spacing_pct*shop_tile_width *i) + (shop_tile_width * (i-1)))
+                tile = arcade.SpriteSolidColor(int(shop_tile_width), int(shop_tile_height), arcade.csscolor.LIGHT_SEA_GREEN )
                 tile.left = x_pos_calc
-                tile.top = y_pos_calc
-                self.board_spritelist.append(tile)
+                tile.top = tile_vertical_position
+                self.background_spritelist.append(tile)
 
-                board_tile_status[self.player_id][count-1] = 'empty'  
+            # set up the board placement sprites
+            rows = ['a','b','c','d','e']
+            lanes = ['1','2','3','4','5','6','7']
+            
+            # place the board in relation to the shop
+            board_offset_vert = shop_vertical_offset - 650 + (tile_height * 4)
+            board_offset_hor = 200 + (tile_width * 6)
 
-        
-        # create the HQ room and position it on the board
-        # 1) create the card
-        hq_id = "hq_1"
-        hq_space_id = 17
-        hq_card = ShopCard(hq_id)
-        # 2) identify and hide the board tile where we will move the hq card
-        # loop through background sprites with an index id, and store if we find a match
-        hq_boardspace_sprite = []
-        for i, sprite in enumerate(self.board_spritelist):
-            if i == hq_space_id:
-                hq_boardspace_sprite = sprite
-        board_tile_status[self.player_id][hq_space_id] = hq_id
-        # make the board tile sprite invisible so our card isn't overlapping with it
-        hq_boardspace_sprite.alpha = 0
+            count = 0
+            for j,row in enumerate(rows):
+                for k, lane in enumerate(lanes):
 
-        # 3) add  hq card to the appropriate list
-        hq_card.add_to_list(self.ship_spritelist)
-        # 3) move card to the correct location 
-        hq_card.set_position_cxy(hq_boardspace_sprite.position)
+                    # make the board alternating colors
+                    tilecolor = arcade.csscolor.LIGHT_GRAY
+                    if count % 2 == 0:
+                        tilecolor = arcade.csscolor.GRAY
+                    count += 1
 
-        # record card position in card object's internal data
-        self.place_card_on_board(hq_card, hq_space_id)
+                    y_pos_calc = board_offset_vert - (tile_height * j)
+                    x_pos_calc = (board_offset_hor -  (tile_width * k) )
+
+                    tile = arcade.SpriteSolidColor(int(tile_width), int(tile_height), tilecolor )
+                    tile.alpha = 100
+                    tile.left = x_pos_calc
+                    tile.top = y_pos_calc
+                    self.board_spritelist.append(tile)
+
+                    board_tile_status[self.player_id][count-1] = 'empty'  
+
+            
+            # create the HQ room and position it on the board
+            # 1) create the card
+            hq_id = "hq_1"
+            hq_space_id = 17
+            hq_card = ShopCard(hq_id)
+            # 2) identify and hide the board tile where we will move the hq card
+            # loop through background sprites with an index id, and store if we find a match
+            hq_boardspace_sprite = []
+            for i, sprite in enumerate(self.board_spritelist):
+                if i == hq_space_id:
+                    hq_boardspace_sprite = sprite
+            board_tile_status[self.player_id][hq_space_id] = hq_id
+            # make the board tile sprite invisible so our card isn't overlapping with it
+            hq_boardspace_sprite.alpha = 0
+
+            # 3) add  hq card to the appropriate list
+            hq_card.add_to_list(self.ship_spritelist)
+            # 3) move card to the correct location 
+            hq_card.set_position_cxy(hq_boardspace_sprite.position)
+
+            # record card position in card object's internal data
+            hq_card.place_card_on_board(hq_space_id)
+
+        self.first_time_shown = False
 
         # fill the shop with first set of cards
         self.roll_shop(False)
@@ -511,7 +540,7 @@ class ShopView(arcade.View):
                 # make the board tile sprite invisible so our card isn't overlapping with it
                 board_tile_sprite[0].alpha = 0
                 # record board position in card's internal data
-                self.place_card_on_board(self.held_tile[0], cell_id)
+                self.held_tile[0].place_card_on_board(cell_id)
 
                 # reset the board tile sprite and player board at the last position
                 if old_position_found:
@@ -546,6 +575,10 @@ class ShopView(arcade.View):
         money_text = "$" + str(self.money)
         arcade.draw_text(money_text, overall_window_size[0]/10, 700, arcade.color.BLACK, font_size= 20, anchor_x= "left")
 
+        turn_text = "TURN: " + str(self.turn)
+        arcade.draw_text(turn_text, overall_window_size[0]/15, 750, arcade.color.BLACK, font_size= 20, anchor_x= "left")
+
+
         # display sprites
         self.manager.draw()
         self.background_spritelist.draw()
@@ -560,8 +593,8 @@ class FightView(arcade.View):
         super().__init__()
         self.player1shop = playeroneshopview
         self.player2shop = playertwoshopview
-        self.player1_board_sprites: arcade.SpriteList
-        self.player2_board_sprites: arcade.SpriteList
+        self.player1_board_sprites = arcade.SpriteList()
+        self.player2_board_sprites = arcade.SpriteList()
         # spritelist for effects that appear and disapear (bullets, green activation flash)
         self.fx_spritelist = arcade.SpriteList()
 
@@ -661,12 +694,38 @@ class FightView(arcade.View):
     def on_show_view_function(self):
         # enable the UI of this view to be shown
         self.manager.enable()
-        print('passed ui manager enable')
-
-        self.player1_board_sprites = self.player1shop.ship_spritelist
-        self.player2_board_sprites = self.player2shop.ship_spritelist
-
+        # record view is now shown    
         self.viewShown = True
+        print('passed ui manager enable')
+        
+        # copy player sprites
+        for sprite in self.player1shop.ship_spritelist:
+            # only proceede if sprite is a shopcard
+            if sprite.__class__.__name__ != "ShopCard": 
+                continue
+            
+            # create new shopcard of the same card type as the player ship card
+            copyCard = ShopCard(sprite.card)
+            # use built-in function to make it a visual/stat copy of the input
+            copyCard.become_cheap_copy(sprite)
+            copyCard.add_to_list(self.player1_board_sprites)
+        
+        #print(len(self.player1_board_sprites))
+        #print(len(self.player1shop.ship_spritelist))
+
+        # copy player sprites
+        for sprite in self.player2shop.ship_spritelist:
+            # only proceede if sprite is a shopcard
+            if sprite.__class__.__name__ != "ShopCard": 
+                continue
+            
+            # create new shopcard of the same card type as the player ship card
+            copyCard = ShopCard(sprite.card)
+            # use built-in function to make it a visual/stat copy of the input
+            copyCard.become_cheap_copy(sprite)
+            copyCard.add_to_list(self.player2_board_sprites)       
+
+
 
         # rotate boards
         for tile in self.player1_board_sprites:
@@ -726,8 +785,6 @@ class FightView(arcade.View):
         # check validity of board for when connecting pieces shot off 
         # # board tiles are sorted into "active," "destroyed," "disconnected" lists
 
-        print('a')
-
         ### VICTORY CONDITION CHECK ###
         # check if either HQ tile is destroyed
         playerstatus = ['alive', 'alive']
@@ -735,8 +792,6 @@ class FightView(arcade.View):
             if data['sprite_id'] == 'hq_1' and data['status'] == 'destroyed':
                 
                 playerstatus[data['player']] = 'dead'
-
-        print('b')
 
         # if one or more HQ tiles destroyed, post the result on screen and exit function        
         if playerstatus[0] == 'dead' and playerstatus[1] == 'dead':
@@ -755,8 +810,6 @@ class FightView(arcade.View):
 
         # get turn number
 
-        print('c')
-
         # if first turn
         if step == 0:
             # decide and store first and second player
@@ -773,6 +826,8 @@ class FightView(arcade.View):
         # variable that tracks where in function to trigger given the input step value
         req_step = 0
 
+        print('step: ', step, 'req step: ', req_step)
+
         while req_step <= step: 
 
             # loop through positions on board from first row moving back, left to right
@@ -781,8 +836,11 @@ class FightView(arcade.View):
                     # activation stage, for each player
                     for player_number in self.player_order:
 
+                        #print('req_step: ', req_step, 'row: ', row, 'column: ', column, 'playernum: ', player_number)
+
                         # check if given row-column placement has a board tile in it to trigger
                         activated_board_obj = None
+
                         for name, board_obj_data in self.player_board_data.items():
 
                             if board_obj_data['player'] == player_number and board_obj_data['row'] == row and board_obj_data['col'] == column:
@@ -794,10 +852,13 @@ class FightView(arcade.View):
                                 # if all conditions met, pass on the object's data to be activated
                                 activated_board_obj = board_obj_data
                         
+                        #print('g')
+
                         # move to next cell if no board object found
                         if activated_board_obj == None :
                             continue
-
+                        
+                        
                         # each activatable tile is a new step increased by 1 from the previous
                         req_step += 1
 
