@@ -1,7 +1,6 @@
 #import pandas as pd
 import arcade
 import arcade.csscolor
-import arcade.csscolor
 import arcade.gui
 import random
 import os 
@@ -61,7 +60,6 @@ class ShopCard(arcade.Sprite):
 
         # get size of image to automaticall rescale to size of 1 tile
         img = cv2.imread(self.image_file_name, cv2.IMREAD_UNCHANGED)
-        dimensions = img.shape
 
         # height, width, number of channels in image
         width = img.shape[1]
@@ -84,6 +82,10 @@ class ShopCard(arcade.Sprite):
         self.energybar = arcade.SpriteSolidColor(width=TILE_SIZE, height=1, color = arcade.csscolor.DARK_GRAY)
         self.energybar.alpha = 0
         self.show_energy_bar = False
+
+        # store the spritelist this is a member of, so we can pass it on to sub-sprites like HP numbers
+        self.current_sprite_list: arcade.SpriteList
+
 
         # coordinates for hp/atk within the card
         self.HEALTHX = 0.3 * TILE_SIZE
@@ -125,6 +127,38 @@ class ShopCard(arcade.Sprite):
         targetlist.append(self.healthdisplay)
         targetlist.append(self.attackdisplay)
         targetlist.append(self.energybar)
+
+        # store which list the sprite is currently a member of
+        self.current_sprite_list = targetlist
+    
+    def change_stats(self, stat = "health", delta = 0):
+        
+        # stat changed can be "health" or "attack"
+        if delta != 0 and stat == "health":
+            # update stored health value
+            self.health += delta
+            # save old health text position
+            saved_hp_position = self.healthdisplay.position
+            # remove old health text
+            self.healthdisplay.kill()
+            # add new health text
+            self.healthdisplay = arcade.create_text_sprite(text = str(self.health),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25,bold = True,  font_name = "Cooper Black")
+            self.healthdisplay.position = saved_hp_position
+            self.current_sprite_list.append(self.healthdisplay)
+
+        # same function as above but for attack    
+        if delta != 0 and stat == "attack":
+            # update stored health value
+            self.attack += delta
+            # save old health text position
+            saved_atk_position = self.attackdisplay.position
+            # remove old health text
+            self.attackdisplay.kill()
+            # add new health text
+            self.attackdisplay = arcade.create_text_sprite(text = str(self.attack),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25,bold = True,  font_name = "Cooper Black")
+            self.attackdisplay.position = saved_atk_position
+            self.current_sprite_list.append(self.attackdisplay)
+            
 
     def add_energy(self, energy:int, fill:bool = False):
 
@@ -282,10 +316,10 @@ class ShopView(arcade.View):
 
         # record the row and column of the card internally
         card_obj.cell_id = cell_id
-        card_obj.column = ((cell_id + 1) % 7)-1
-        card_obj.row = math.ceil((cell_id+1) / 7)
+        card_obj.column = ((cell_id) % 7)
+        card_obj.row = math.floor((cell_id) / 7)
     
-        print('placed card at row: ', card_obj.row, ' and column: ', card_obj.column )
+        print('placed card at cellID', cell_id, ' row: ', card_obj.row, ' and column: ', card_obj.column )
 
     def on_show_view(self):
         arcade.set_background_color(arcade.color.WHITE)
@@ -312,8 +346,8 @@ class ShopView(arcade.View):
         lanes = ['1','2','3','4','5','6','7']
         
         # place the board in relation to the shop
-        board_offset_vert = shop_vertical_offset - 650
-        board_offset_hor = 200
+        board_offset_vert = shop_vertical_offset - 650 + (tile_height * 4)
+        board_offset_hor = 200 + (tile_width * 6)
 
         count = 0
         for j,row in enumerate(rows):
@@ -325,8 +359,8 @@ class ShopView(arcade.View):
                     tilecolor = arcade.csscolor.GRAY
                 count += 1
 
-                y_pos_calc = board_offset_vert + (tile_height * j)
-                x_pos_calc = (board_offset_hor +  (tile_width * k) )
+                y_pos_calc = board_offset_vert - (tile_height * j)
+                x_pos_calc = (board_offset_hor -  (tile_width * k) )
 
                 tile = arcade.SpriteSolidColor(int(tile_width), int(tile_height), tilecolor )
                 tile.alpha = 100
@@ -553,10 +587,16 @@ class FightView(arcade.View):
         self.manager = arcade.gui.UIManager()
         # define V-Box
         self.v_box = arcade.gui.UIBoxLayout()
+
         # add end fight button (should advance back to first player window)
         end_turn_button = arcade.gui.UIFlatButton(text="End Fight", width=200)
         self.v_box.add(end_turn_button)
         end_turn_button.on_click = self.on_advance_button
+
+        # add restart fight button (should replay the exact same fight?) currently RNG wont line up
+        replay_button = arcade.gui.UIFlatButton(text="Replay Fight", width=200)
+        self.v_box.add(replay_button)
+        replay_button.on_click = self.on_replay_button
 
         self.manager.add(
             arcade.gui.UIAnchorWidget(
@@ -571,6 +611,11 @@ class FightView(arcade.View):
             arcade.close_window()
         else:    
             self.window.show_view(self.next_screen_view)
+
+    def on_replay_button(self, event):
+        print('replay button pressed', event)
+        self.on_hide_view_function()
+        self.on_show_view_function()
 
 
     def build_board_objects(self):
@@ -612,9 +657,11 @@ class FightView(arcade.View):
                 # add data objects to overall game state data list
                 self.player_board_data[uq_str] = card_data
            
-    def on_show_view(self):
+
+    def on_show_view_function(self):
         # enable the UI of this view to be shown
         self.manager.enable()
+        print('passed ui manager enable')
 
         self.player1_board_sprites = self.player1shop.ship_spritelist
         self.player2_board_sprites = self.player2shop.ship_spritelist
@@ -641,6 +688,9 @@ class FightView(arcade.View):
 
         self.build_board_objects()
 
+    def on_show_view(self):
+        self.on_show_view_function()
+
     def calculate_hit(self, attacker_sprite: ShopCard, defender_sprite: ShopCard, update_action: dict, live_board_data: dict):
         
         # should only be called when update action is a hit
@@ -656,11 +706,10 @@ class FightView(arcade.View):
 
         else:
             # update sprite health value and displayed health value
-            defender_sprite.health -= attacker_sprite.attack
-            defender_sprite.healthdisplay.text = str(defender_sprite.health)
+            defender_sprite.change_stats("health", (-1 * attacker_sprite.attack))
 
             print('defendersprite new health: ', defender_sprite.health)
-            print('defendersprite text sprite new health: ', defender_sprite.healthdisplay.text)
+            #print('defendersprite text sprite new health: ', defender_sprite.healthdisplay.text)
 
     def advance_fight(self, step = None, update_board = True):
 
@@ -677,6 +726,7 @@ class FightView(arcade.View):
         # check validity of board for when connecting pieces shot off 
         # # board tiles are sorted into "active," "destroyed," "disconnected" lists
 
+        print('a')
 
         ### VICTORY CONDITION CHECK ###
         # check if either HQ tile is destroyed
@@ -686,7 +736,7 @@ class FightView(arcade.View):
                 
                 playerstatus[data['player']] = 'dead'
 
-        
+        print('b')
 
         # if one or more HQ tiles destroyed, post the result on screen and exit function        
         if playerstatus[0] == 'dead' and playerstatus[1] == 'dead':
@@ -704,6 +754,8 @@ class FightView(arcade.View):
             return
 
         # get turn number
+
+        print('c')
 
         # if first turn
         if step == 0:
@@ -773,7 +825,7 @@ class FightView(arcade.View):
                                 board_updates.append(action)
 
         # objects passed forward from last function:
-        # [board updates], list of actions 
+        # [board updates], list of actions
         # 
         #
 
@@ -854,7 +906,7 @@ class FightView(arcade.View):
         if self.fight_heartbeat % tickspeed == 0:
             self.advance_fight()
     
-    def on_hide_view(self):
+    def on_hide_view_function(self):
         
         self.manager.disable()
 
@@ -869,6 +921,11 @@ class FightView(arcade.View):
         self.fight_step = 0
 
         self.clear()
+
+        
+    
+    def on_hide_view(self):
+        self.on_hide_view_function()
 
         return super().on_hide_view()
     

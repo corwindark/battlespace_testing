@@ -12,6 +12,8 @@ def get_first_enemy_card_in_same_row(acting_card, boardstate):
     target_col = acting_card['object'].column
     # str value of the UQ id of card to target
     returned_target = ""
+    # Store enemy HQ column so we can move towards it with our aim
+    enemy_hq_column = None
     
     # wrapped in a while loop until we have checked all the columns to the middle (col 3)
     while returned_target == "":
@@ -27,8 +29,12 @@ def get_first_enemy_card_in_same_row(acting_card, boardstate):
             if tile['player'] == acting_card['player']:
                 continue
             
+            # record enemy HQ position
+            if tile['sprite_id'] == "hq_1":
+                enemy_hq_column = tile['col'] 
+
             # if we find a new closest valid target, store it
-            if tile['col'] == target_col and tile['row'] < lowest_row:
+            if tile['col'] == target_col and tile['row'] < lowest_row and tile['status'] == 'alive': 
 
                 lowest_row = tile['row']
                 returned_target = key
@@ -38,11 +44,11 @@ def get_first_enemy_card_in_same_row(acting_card, boardstate):
         # if we didn't find in the previous column, move target column closer to the center
         if returned_target  == "":
             # if we are checking center and no HQ column, then exit and accept we have no valid target
-            if target_col == 3:
+            if target_col == enemy_hq_column:
                 break
-            elif target_col > 3:
+            elif target_col > enemy_hq_column:
                 target_col -= 1
-            elif target_col < 3:
+            elif target_col < enemy_hq_column:
                 target_col += 1
     
     if returned_target == "":

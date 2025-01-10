@@ -1,0 +1,10 @@
+Bugs:
+[ ] Weapons shoot destroyed rooms
+[ ] Turrets dont shoot in the correct order
+
+Things to fix in demo code
+
+
+[ ] Move 'place card on board' code in shopview into place card on board function to consolidate code
+[ ] Make function to update card hp/atk in shop phase
+[ ] 
