@@ -144,17 +144,13 @@ class ShopCard(arcade.Sprite):
             self.energybar.alpha = 200
             self.energybar.height =1
             #self.energybar.height = TILE_SIZE * (missing_energy / self.max_energy)
-        
-
-
-
-
-
-
-
-
-
     
+    def hide_sprite(self):
+        #make sprites invisible
+        self.alpha = 0
+        self.healthdisplay.alpha = 0
+        self.attackdisplay.alpha = 0
+
 
 class BoardTile(arcade.Sprite):
 
@@ -535,7 +531,10 @@ class FightView(arcade.View):
         # spritelist for effects that appear and disapear (bullets, green activation flash)
         self.fx_spritelist = arcade.SpriteList()
 
+        
         self.viewShown = False
+        # next screen view should be player1shop view, so that cycle of playthrough can continue
+        self.next_screen_view = playeroneshopview
 
         # these are the dictionaries that hold all fight data in one place 
         # {obj_n: {'player':int, 'row':0, 'col':1, 'sprite':sprite_from_board, 'hp':sprite_hp, 'atk': sprite_atk}}
@@ -548,6 +547,30 @@ class FightView(arcade.View):
         # keep track of which player is first
         self.player_order = [0,1]
 
+
+        # END FIGHT BUTTON SECTION, ALL GUI
+        # define manager
+        self.manager = arcade.gui.UIManager()
+        # define V-Box
+        self.v_box = arcade.gui.UIBoxLayout()
+        # add end fight button (should advance back to first player window)
+        end_turn_button = arcade.gui.UIFlatButton(text="End Fight", width=200)
+        self.v_box.add(end_turn_button)
+        end_turn_button.on_click = self.on_advance_button
+
+        self.manager.add(
+            arcade.gui.UIAnchorWidget(
+                anchor_x="left",
+                anchor_y="top",
+                child=self.v_box)
+        )
+
+    def on_advance_button(self, event):
+        print('end fight button pressed', event)
+        if self.next_screen_view == None:
+            arcade.close_window()
+        else:    
+            self.window.show_view(self.next_screen_view)
 
 
     def build_board_objects(self):
@@ -588,9 +611,9 @@ class FightView(arcade.View):
                 # add data objects to overall game state data list
                 self.player_board_data[uq_str] = card_data
            
-
-
     def on_show_view(self):
+        # enable the UI of this view to be shown
+        self.manager.enable()
 
         self.player1_board_sprites = self.player1shop.ship_spritelist
         self.player2_board_sprites = self.player2shop.ship_spritelist
@@ -617,6 +640,20 @@ class FightView(arcade.View):
 
         self.build_board_objects()
 
+    def calculate_hit(self, attacker_sprite: ShopCard, defender_sprite: ShopCard, update_action: dict, live_board_data: dict):
+        
+        # should only be called when update action is a hit
+      
+        if attacker_sprite.attack >= defender_sprite.health:
+            # room destroyed
+            defender_sprite.hide_sprite()
+        else:
+            # update sprite health value and displayed health value
+            defender_sprite.health -= attacker_sprite.attack
+            defender_sprite.healthdisplay.text = str(defender_sprite.health)
+
+            print('defendersprite new health: ', defender_sprite.health)
+            print('defendersprite text sprite new health: ', defender_sprite.healthdisplay.text)
 
     def advance_fight(self, step = None, update_board = True):
         
@@ -685,25 +722,42 @@ class FightView(arcade.View):
                         print('STEP TRIGGERED FOR: ', req_step)
 
                         # card activation functions take in board state and return board state changes
-                        # change return form of [(target uqid, change type ["attack", "heal", "replace"], animationID )]
+                        # change return form of:
+                        # {author_id (uq id string of activated card), 
+                        #   player_id (player number),
+                        #   target_id (target card uq string),
+                        #  action (str of attack/heal/replace),
+                        #   amount (numeric value of attacking cards attack power) }
                         returned_actions = activated_board_obj['object'].act_function(activated_board_obj, self.player_board_data)   
 
                         # as the object returned above may have different lengths, we loop through and append to the board_updated variable declared above
                         for action in returned_actions:
                             board_updates.append(action)
-        
-        
-        #print(board_obj_data)
+
+        # objects passed forward from last function:
+        # [board updates], list of actions 
+        # 
+        #
 
         # After triggering the current step, this function resolves/updates the board, and animates the changes
         for update in board_updates:
             
+            # get the sprite objects involved in the update
             acting_sprite = self.player_board_data[update['author_id']]['object']
             target_sprite = self.player_board_data[update['target_id']]['object']
 
             # animation portion
             if update['action'] == 'attack':
+                
+                # run the actual damage/destroying calculations
+                self.calculate_hit(update_action = update, 
+                                   attacker_sprite = acting_sprite, 
+                                   defender_sprite = target_sprite, 
+                                   live_board_data = self.player_board_data)
+                
 
+                
+                ### ANIMATION SECTION
                 # create a line sprite positioned at the acting sprite of length to reach the target
                 for i in range(0,21):
                     
@@ -727,13 +781,6 @@ class FightView(arcade.View):
                     # add target line to FX spritelist that is wiped every step
                     self.fx_spritelist.append(targetline)
 
-
-
-
-
-                
-
-
         # once all tiles and hits calculated                
         # check if tiles destroyed and update lists
         # check after attack if game won, exit if it has been
@@ -746,7 +793,10 @@ class FightView(arcade.View):
 
         # clear view to start each tick clean
         self.clear() 
-       
+
+        # draw GUI elements
+        self.manager.draw()
+
         # add 1 to internal timer (should be 20 ticks a second)
         self.fight_heartbeat += 1
         arcade.draw_text("time: " + str(self.fight_heartbeat), 200, 200, arcade.color.BLACK, font_size= 20, anchor_x= "left")
@@ -760,13 +810,28 @@ class FightView(arcade.View):
         # tick speed for fight
         tickspeed = 40
 
+        # based on tickspeed set above, advance fight when enough time has passed
         if self.fight_heartbeat % tickspeed == 0:
-
             self.advance_fight()
     
+    def on_hide_view(self):
+        
+        self.manager.disable()
 
+        # RESET EVERYTHING
+        # VERY CLUNKY
+        self.player1_board_sprites.clear()
+        self.player2_board_sprites.clear()
+        self.fx_spritelist.clear()
+        self.viewShown = False
+        self.player_board_data = {}
+        self.fight_heartbeat = 0
+        self.fight_step = 0
 
+        self.clear()
 
+        return super().on_hide_view()
+    
 
 def main():
 

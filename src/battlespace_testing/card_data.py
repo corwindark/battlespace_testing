@@ -78,7 +78,7 @@ card_dict = {
         'sprite_id': 'turret_1',
         'tier': 1,
         'hp': 5,
-        'atk': 1,
+        'atk': 10,
         'max_energy': 2,
         'on_energy_max': ['attack_function'],
         'on_place_first': ['default'],
