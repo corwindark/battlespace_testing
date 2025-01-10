@@ -592,7 +592,8 @@ class FightView(arcade.View):
                     'sprite_id': card_obj.card,
                     'hp': card_obj.health,
                     'atk': card_obj.attack,
-                    'object': card_obj
+                    'object': card_obj,
+                    'status': 'alive'
                 }
 
                 # unique string to use as key in dictionary (mostly wont reference this)
@@ -647,6 +648,12 @@ class FightView(arcade.View):
         if attacker_sprite.attack >= defender_sprite.health:
             # room destroyed
             defender_sprite.hide_sprite()
+
+            # update the room to be destroyed in board data
+            defender_id = update_action['target_id']
+            self.player_board_data[defender_id]['status'] = 'destroyed'
+            print('def card: ', defender_id, ' status: ', self.player_board_data[defender_id]['status'] )
+
         else:
             # update sprite health value and displayed health value
             defender_sprite.health -= attacker_sprite.attack
@@ -656,7 +663,6 @@ class FightView(arcade.View):
             print('defendersprite text sprite new health: ', defender_sprite.healthdisplay.text)
 
     def advance_fight(self, step = None, update_board = True):
-        
 
         # indexes that store the current point in time of the fight resolver (given that this is a 'step' function)
         # use stored value unless (for debug) we want to see a particular step
@@ -668,8 +674,34 @@ class FightView(arcade.View):
         # update FX sprites from last step to disappear
         self.fx_spritelist = arcade.SpriteList()
 
-        # check validity of board
-            # board tiles sorted into "active," "destroyed," "disconnected" lists
+        # check validity of board for when connecting pieces shot off 
+        # # board tiles are sorted into "active," "destroyed," "disconnected" lists
+
+
+        ### VICTORY CONDITION CHECK ###
+        # check if either HQ tile is destroyed
+        playerstatus = ['alive', 'alive']
+        for name, data in self.player_board_data.items():
+            if data['sprite_id'] == 'hq_1' and data['status'] == 'destroyed':
+                
+                playerstatus[data['player']] = 'dead'
+
+        
+
+        # if one or more HQ tiles destroyed, post the result on screen and exit function        
+        if playerstatus[0] == 'dead' and playerstatus[1] == 'dead':
+            end_text = arcade.create_text_sprite(text = "Fight Tied", start_x = 500, start_y = 500, color = arcade.csscolor.BLACK, font_size = 25, bold = True, font_name = "Cooper Black")
+            self.fx_spritelist.append(end_text)
+            return
+        elif playerstatus[0] == 'dead':
+            end_text = arcade.create_text_sprite(text = "Player 2 Won", start_x = 100, start_y = 100, color = arcade.csscolor.BLACK, font_size = 25, bold = True, font_name = "Cooper Black")
+            self.fx_spritelist.append(end_text)
+            return
+        elif playerstatus[1] == 'dead':
+            print('showtext p2 dead')
+            end_text = arcade.create_text_sprite(text = "Player 1 Won", start_x = 500, start_y = 500, color = arcade.csscolor.BLACK, font_size = 25, bold = True, font_name = "Cooper Black")
+            self.fx_spritelist.append(end_text)
+            return
 
         # get turn number
 
@@ -689,50 +721,56 @@ class FightView(arcade.View):
         # variable that tracks where in function to trigger given the input step value
         req_step = 0
 
-        # activation stage, for each player
-        for player_number in self.player_order:
+        while req_step <= step: 
 
             # loop through positions on board from first row moving back, left to right
             for row in range(0,5):
                 for column in range(0,7):
+                    # activation stage, for each player
+                    for player_number in self.player_order:
 
-                    # check if given row-column placement has a board tile in it to trigger
-                    activated_board_obj = None
-                    for name, board_obj_data in self.player_board_data.items():
+                        # check if given row-column placement has a board tile in it to trigger
+                        activated_board_obj = None
+                        for name, board_obj_data in self.player_board_data.items():
 
-                        if board_obj_data['player'] == player_number and board_obj_data['row'] == row and board_obj_data['col'] == column:
-                           
-                            activated_board_obj = board_obj_data
-                    
-                    # move to next cell if no board object found
-                    if activated_board_obj == None:
-                        continue
+                            if board_obj_data['player'] == player_number and board_obj_data['row'] == row and board_obj_data['col'] == column:
+                            
+                                # dont activate if room destroyed
+                                if board_obj_data['status'] == 'destroyed':
+                                    continue
+                                
+                                # if all conditions met, pass on the object's data to be activated
+                                activated_board_obj = board_obj_data
+                        
+                        # move to next cell if no board object found
+                        if activated_board_obj == None :
+                            continue
 
-                    # each activatable tile is a new step increased by 1 from the previous
-                    req_step += 1
+                        # each activatable tile is a new step increased by 1 from the previous
+                        req_step += 1
 
-                    # exit loop if we have passed the current step
-                    if req_step > step:
-                        break
+                        # exit loop if we have passed the current step
+                        if req_step > step:
+                            break
 
 
-                    if req_step == step:
+                        if req_step == step:
 
-                        # call tile's activation function 
-                        print('STEP TRIGGERED FOR: ', req_step)
+                            # call tile's activation function 
+                            print('STEP TRIGGERED FOR: ', req_step)
 
-                        # card activation functions take in board state and return board state changes
-                        # change return form of:
-                        # {author_id (uq id string of activated card), 
-                        #   player_id (player number),
-                        #   target_id (target card uq string),
-                        #  action (str of attack/heal/replace),
-                        #   amount (numeric value of attacking cards attack power) }
-                        returned_actions = activated_board_obj['object'].act_function(activated_board_obj, self.player_board_data)   
+                            # card activation functions take in board state and return board state changes
+                            # change return form of:
+                            # {author_id (uq id string of activated card), 
+                            #   player_id (player number),
+                            #   target_id (target card uq string),
+                            #  action (str of attack/heal/replace),
+                            #   amount (numeric value of attacking cards attack power) }
+                            returned_actions = activated_board_obj['object'].act_function(activated_board_obj, self.player_board_data)   
 
-                        # as the object returned above may have different lengths, we loop through and append to the board_updated variable declared above
-                        for action in returned_actions:
-                            board_updates.append(action)
+                            # as the object returned above may have different lengths, we loop through and append to the board_updated variable declared above
+                            for action in returned_actions:
+                                board_updates.append(action)
 
         # objects passed forward from last function:
         # [board updates], list of actions 
@@ -783,7 +821,9 @@ class FightView(arcade.View):
 
         # once all tiles and hits calculated                
         # check if tiles destroyed and update lists
-        # check after attack if game won, exit if it has been
+        
+        
+
 
 
         # update fight step so next function call will trigger the next action in the fight
