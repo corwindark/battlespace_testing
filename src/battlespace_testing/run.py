@@ -10,6 +10,7 @@ import math
 #from battlespace_testing import card_data
 #from cards import get_card_dictionary
 import card_data
+import bullet_sprite
 import copy
 
 def image_size(filename):
@@ -597,7 +598,7 @@ class FightView(arcade.View):
         self.player2_board_sprites = arcade.SpriteList()
         # spritelist for effects that appear and disapear (bullets, green activation flash)
         self.fx_spritelist = arcade.SpriteList()
-
+        self.bullet_spritelist = arcade.SpriteList()
         
         self.viewShown = False
         # next screen view should be player1shop view, so that cycle of playthrough can continue
@@ -724,8 +725,6 @@ class FightView(arcade.View):
             # use built-in function to make it a visual/stat copy of the input
             copyCard.become_cheap_copy(sprite)
             copyCard.add_to_list(self.player2_board_sprites)       
-
-
 
         # rotate boards
         for tile in self.player1_board_sprites:
@@ -901,15 +900,31 @@ class FightView(arcade.View):
             if update['action'] == 'attack':
                 
                 # run the actual damage/destroying calculations
-                self.calculate_hit(update_action = update, 
+                """self.calculate_hit(update_action = update, 
                                    attacker_sprite = acting_sprite, 
                                    defender_sprite = target_sprite, 
-                                   live_board_data = self.player_board_data)
-                
+                                   live_board_data = self.player_board_data)"""
+                calculate_hit_params = {'update_action': update, 
+                                   'attacker_sprite': acting_sprite, 
+                                   'defender_sprite': target_sprite, 
+                                   'live_board_data': self.player_board_data}
 
-                
+                # shoot bullet
+                update_bullet = bullet_sprite.BulletSprite(image_txt = 'lightning_2', 
+                                           bullet_px_size = 10, 
+                                           damage = 10, 
+                                           speed = 15, 
+                                           end_x= target_sprite.center_x,
+                                           end_y= target_sprite.center_y,
+                                           parent_frame = self,
+                                           hit_params_to_pass =  calculate_hit_params)
+                update_bullet.position = acting_sprite.position
+                update_bullet.update_position()
+                self.bullet_spritelist.append(update_bullet)
+
                 ### ANIMATION SECTION
                 # create a line sprite positioned at the acting sprite of length to reach the target
+                """
                 for i in range(0,31):
                     
                     # we are doing a dotted line because I cannot figure out how to do cframes in this medium lol
@@ -931,7 +946,7 @@ class FightView(arcade.View):
                     #targetline.radians =  angle
 
                     # add target line to FX spritelist that is wiped every step
-                    self.fx_spritelist.append(targetline)
+                    self.fx_spritelist.append(targetline)"""
 
         # once all tiles and hits calculated                
         # check if tiles destroyed and update lists
@@ -961,8 +976,17 @@ class FightView(arcade.View):
         # draw fx
         self.fx_spritelist.draw()
 
+        # move bullets
+       
+        # draw bullets
+        self.bullet_spritelist.draw()
+        self.bullet_spritelist.update()
+        # check if bullets hit targets
+        for bullet in self.bullet_spritelist:
+            bullet.on_check()
+
         # tick speed for fight
-        tickspeed = 40
+        tickspeed = 80
 
         # based on tickspeed set above, advance fight when enough time has passed
         if self.fight_heartbeat % tickspeed == 0:
