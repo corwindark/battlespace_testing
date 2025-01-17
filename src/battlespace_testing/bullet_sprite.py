@@ -57,15 +57,12 @@ class BulletSprite(arcade.Sprite):
 
     def on_check(self):
         
-        print('update')
-        print(abs(self.end_x - self.position[0] + self.change_x))
-
         # if distance from target is less than one step, proc hit
-        if abs(self.end_x - self.position[0] + self.change_x) <= abs(self.change_x):
+        if abs(self.end_x - self.position[0] + self.change_x) <= abs(self.change_x) or abs(self.end_y - self.position[1] + self.change_y) <= abs(self.change_y) :
             self.frame.calculate_hit(update_action = self.hit_params['update_action'],
-                                     self.hit_params['attacker_sprite'],
-                                     self.hit_params['defender_sprite'],
-                                     self.hit_params['live_board_data'])
+                                     attacker_sprite = self.hit_params['attacker_sprite'],
+                                     defender_sprite = self.hit_params['defender_sprite'],
+                                     live_board_data = self.hit_params['live_board_data'])
             self.kill()
         
         return 

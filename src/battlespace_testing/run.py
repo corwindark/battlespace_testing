@@ -822,6 +822,7 @@ class FightView(arcade.View):
         # this list stores all the attacks/heals etc. that are returned by the cards activated on this step, so they can be resolved
         board_updates = []
 
+
         # variable that tracks where in function to trigger given the input step value
         req_step = 0
 
@@ -858,8 +859,7 @@ class FightView(arcade.View):
                             continue
                         
                         
-                        # each activatable tile is a new step increased by 1 from the previous
-                        req_step += 1
+                        
 
                         # exit loop if we have passed the current step
                         if req_step > step:
@@ -883,7 +883,9 @@ class FightView(arcade.View):
                             # as the object returned above may have different lengths, we loop through and append to the board_updated variable declared above
                             for action in returned_actions:
                                 board_updates.append(action)
-
+                # each activatable tile is a new step increased by 1 from the previous
+                req_step += 1
+        
         # objects passed forward from last function:
         # [board updates], list of actions
         # 
@@ -904,6 +906,7 @@ class FightView(arcade.View):
                                    attacker_sprite = acting_sprite, 
                                    defender_sprite = target_sprite, 
                                    live_board_data = self.player_board_data)"""
+                
                 calculate_hit_params = {'update_action': update, 
                                    'attacker_sprite': acting_sprite, 
                                    'defender_sprite': target_sprite, 
@@ -947,14 +950,7 @@ class FightView(arcade.View):
 
                     # add target line to FX spritelist that is wiped every step
                     self.fx_spritelist.append(targetline)"""
-
-        # once all tiles and hits calculated                
-        # check if tiles destroyed and update lists
-        
-        
-
-
-
+    
         # update fight step so next function call will trigger the next action in the fight
         self.fight_step += 1
 

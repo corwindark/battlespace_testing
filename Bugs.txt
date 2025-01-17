@@ -1,10 +1,10 @@
-Bugs:
-[ ] Weapons shoot destroyed rooms
-[ ] Turrets dont shoot in the correct order
+To add:
+[ ] Separated rooms are deactivated, and not targeted
+
 
 Things to fix in demo code
+[ ] Move to two different 'req step' varibles, one for each player, so 
+first row can be relative
+	[ ] But make sure the loops are synced after each pass through the board
+[ ] don't add to 'req step' if no cells in row
 
-
-[ ] Move 'place card on board' code in shopview into place card on board function to consolidate code
-[ ] Make function to update card hp/atk in shop phase
-[ ] 
