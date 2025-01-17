@@ -81,7 +81,7 @@ def turret_1_activation(acting_turret, boardstate):
 card_dict = {
     'turret_1': {
         'in_shop': True,
-        'sprite_id': 'turret_1',
+        'sprite_id': 'railgun_room_v0.1',
         'tier': 1,
         'hp': 5,
         'atk': 10,
