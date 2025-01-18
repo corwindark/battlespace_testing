@@ -825,18 +825,27 @@ class FightView(arcade.View):
 
         # variable that tracks where in function to trigger given the input step value
         req_step = 0
+        req_step_p1 = 0
+        req_step_p2 = 0
 
         print('step: ', step, 'req step: ', req_step)
 
         while req_step <= step: 
+            
 
+                
             # loop through positions on board from first row moving back, left to right
             for row in range(0,5):
-                for column in range(0,7):
-                    # activation stage, for each player
-                    for player_number in self.player_order:
 
-                        #print('req_step: ', req_step, 'row: ', row, 'column: ', column, 'playernum: ', player_number)
+
+
+                # activation stage, for each player
+                for player_number in self.player_order:
+                    
+                    # track if this row has active cards, if it doesn't, we don't count it as a step in the fight
+                    found_active_cards_in_row = False
+
+                    for column in range(0,7):
 
                         # check if given row-column placement has a board tile in it to trigger
                         activated_board_obj = None
@@ -852,24 +861,27 @@ class FightView(arcade.View):
                                 # if all conditions met, pass on the object's data to be activated
                                 activated_board_obj = board_obj_data
                         
-                        #print('g')
-
                         # move to next cell if no board object found
                         if activated_board_obj == None :
                             continue
+                        else:
+                            found_active_cards_in_row = True
                         
-                        
-                        
+                        # find the current step for this player
+                        current_req_step = 0
+                        if player_number == 0:
+                            current_req_step = req_step_p1
+                        elif player_number == 1:
+                            current_req_step = req_step_p2
 
                         # exit loop if we have passed the current step
-                        if req_step > step:
+                        if current_req_step > step:
                             break
 
-
-                        if req_step == step:
+                        if current_req_step == step:
 
                             # call tile's activation function 
-                            print('STEP TRIGGERED FOR: ', req_step)
+                            print('STEP TRIGGERED FOR: ', current_req_step, "player: ", player_number)
 
                             # card activation functions take in board state and return board state changes
                             # change return form of:
@@ -883,13 +895,26 @@ class FightView(arcade.View):
                             # as the object returned above may have different lengths, we loop through and append to the board_updated variable declared above
                             for action in returned_actions:
                                 board_updates.append(action)
-                # each activatable tile is a new step increased by 1 from the previous
-                req_step += 1
+                
+                    # if we did find cards in the row, count this as a step in current player's fight resolution
+                    if found_active_cards_in_row == True:
+                        if player_number == 0:
+                            req_step_p1 += 1
+                        if player_number == 1:
+                            req_step_p2 += 1
+
+            print("end of row steps: ", req_step_p1, req_step_p2)
+            # if one player had more rows trigger, make the other player's step count the same to catch them up for next round
+            if req_step_p2 != req_step_p1:
+                print('correcting step imbalance')
+                req_step_p1 = max(req_step_p1, req_step_p2)
+                req_step_p2 = max(req_step_p1, req_step_p2)
+
+            # each activatable tile is a new step increased by 1 from the previous
+            req_step += 1
         
         # objects passed forward from last function:
         # [board updates], list of actions
-        # 
-        #
 
         # After triggering the current step, this function resolves/updates the board, and animates the changes
         for update in board_updates:
