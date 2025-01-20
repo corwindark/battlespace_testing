@@ -903,10 +903,10 @@ class FightView(arcade.View):
                         if player_number == 1:
                             req_step_p2 += 1
 
-            print("end of row steps: ", req_step_p1, req_step_p2)
+            #print("end of row steps: ", req_step_p1, req_step_p2)
             # if one player had more rows trigger, make the other player's step count the same to catch them up for next round
             if req_step_p2 != req_step_p1:
-                print('correcting step imbalance')
+                #print('correcting step imbalance')
                 req_step_p1 = max(req_step_p1, req_step_p2)
                 req_step_p2 = max(req_step_p1, req_step_p2)
 
@@ -939,7 +939,7 @@ class FightView(arcade.View):
 
                 # shoot bullet
                 update_bullet = bullet_sprite.BulletSprite(image_txt = 'lightning_2', 
-                                           bullet_px_size = 10, 
+                                           bullet_px_size = 10 *  math.sqrt(update['amount']), 
                                            damage = 10, 
                                            speed = 15, 
                                            end_x= target_sprite.center_x,
