@@ -122,14 +122,14 @@ card_dict = {
         'in_shop': True,      
         'sprite_id': 'lightning_1',
         'hp': 8,
-        'atk': 0,
+        'atk': 2,
         'max_energy': 3
     },
     'lightning_2': {    
         'in_shop': True,   
         'sprite_id': 'lightning_2',
         'hp': 8,
-        'atk': 0,
+        'atk': 5,
         'max_energy': 2
     },
     'portal_1': {

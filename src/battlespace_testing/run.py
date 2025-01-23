@@ -73,6 +73,13 @@ class ShopCard(arcade.Sprite):
         self.attack = card_data['atk']
         self.max_energy = card_data['max_energy']
         self.current_energy = 0
+
+        # start with shield if card has it (unusual)
+        if not 'start_shield' in card_data.keys():
+            self.shield = 0
+        else:
+            self.shield = card_data['start_shield']
+
         # position details for combat
         self.cell_id: int
         self.column: int
@@ -81,13 +88,19 @@ class ShopCard(arcade.Sprite):
         # add detail sprites to the card
         self.healthdisplay = arcade.create_text_sprite(text = str(self.health),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25,bold = True,  font_name = "Cooper Black")
         self.attackdisplay = arcade.create_text_sprite(text = str(self.attack),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25, bold = True, font_name = "Henney Future")
+        self.shielddisplay = None
+        #= arcade.create_text_sprite(text = str(self.shield),start_x = 0, start_y = 0, color = arcade.csscolor.BLUE, font_size = 25, bold = True, font_name = "Henney Future")
+        self.shieldposition = (0,0)
+
         self.energybar = arcade.SpriteSolidColor(width=TILE_SIZE, height=1, color = arcade.csscolor.DARK_GRAY)
         self.energybar.alpha = 0
         self.show_energy_bar = False
 
+        # call shield update function to hide or show value as needed
+        self.update_shield('set', self.shield)
+
         # store the spritelist this is a member of, so we can pass it on to sub-sprites like HP numbers
         self.current_sprite_list: arcade.SpriteList
-
 
         # coordinates for hp/atk within the card
         self.HEALTHX = 0.3 * TILE_SIZE
@@ -98,6 +111,7 @@ class ShopCard(arcade.Sprite):
         # this is the function triggered when card activated
         self.act_function = card_data['act_function']
 
+
     def set_position_topleft(self, top, left):
         # helper function to move all the subsprites with the tile
         self.top = top
@@ -105,9 +119,12 @@ class ShopCard(arcade.Sprite):
 
         self.healthdisplay.position = (self.position[0] + self.HEALTHX , self.position[1] - self.HEALTHY) 
         self.attackdisplay.position = (self.position[0] - self.ATTACKX , self.position[1] - self.ATTACKY) 
- 
-    def set_position_cxy(self, position):
+        self.shieldposition = (self.position[0] + self.HEALTHX , self.position[1] + self.ATTACKY) 
 
+        # update shield visibility
+        self.update_shield('set', self.shield)
+        
+    def set_position_cxy(self, position):
         #print("pos 0: ", position[0], "pos 1: ", position[1])
         #print("center x:", self.center_x, "center y: ", self.center_y)
         self.center_x = position[0]
@@ -115,6 +132,10 @@ class ShopCard(arcade.Sprite):
 
         self.healthdisplay.position = (self.position[0] + self.HEALTHX , self.position[1] - self.HEALTHY) 
         self.attackdisplay.position = (self.position[0] - self.ATTACKX , self.position[1] - self.ATTACKY) 
+        self.shieldposition = (self.position[0] + self.HEALTHX , self.position[1] + self.ATTACKY) 
+        if self.shielddisplay != None:
+            self.shielddisplay.position = self.shieldposition
+        #self.update_shield('set', self.shield)
 
         self.energybar.position = (self.position[0], self.position[1])
         self.energybar.top = self.top
@@ -130,6 +151,10 @@ class ShopCard(arcade.Sprite):
         targetlist.append(self.attackdisplay)
         targetlist.append(self.energybar)
 
+        if self.shielddisplay != None:
+            self.shielddisplay.remove_from_sprite_lists()
+            targetlist.append(self.shielddisplay)
+        
         # store which list the sprite is currently a member of
         self.current_sprite_list = targetlist
     
@@ -184,7 +209,36 @@ class ShopCard(arcade.Sprite):
             self.energybar.alpha = 200
             self.energybar.height =1
             #self.energybar.height = TILE_SIZE * (missing_energy / self.max_energy)
+
+    def update_shield(self, mode, amount ):
+        #print('update shield mode: ', mode, "amount: ", amount, "oldshieldtext: ", self.shielddisplay.position)
+        # mode can be set- override number, or add - add value to current
+        if mode == 'add':
+            self.shield += amount
+        elif mode == 'set':
+            self.shield = amount
+
+        if self.shielddisplay != None:       
+            #print('display found and destroyed')
+            self.shielddisplay.kill()
+
+        if self.shield != 0:
+            #print('changed shield to viz')
+
+            # update shield text
+            saved_shieldtxt_position = self.shieldposition
+            # remove old health text
+            if self.shielddisplay != None:
+                self.shielddisplay.kill()
     
+            # add new health text
+            self.shielddisplay = arcade.create_text_sprite(text = str(self.shield),start_x = 0, start_y = 0, color = arcade.csscolor.BLUE, font_size = 25,bold = True,  font_name = "Cooper Black")
+            self.shielddisplay.position = saved_shieldtxt_position
+
+            if hasattr(self, 'current_sprite_list'):
+                self.current_sprite_list.append(self.shielddisplay)
+
+
     def place_card_on_board(self, cell_id):
         # To Do: update function to include all placement details
 
@@ -200,6 +254,7 @@ class ShopCard(arcade.Sprite):
         self.alpha = 0
         self.healthdisplay.alpha = 0
         self.attackdisplay.alpha = 0
+        self.shielddisplay.alpha = 0
 
     def become_cheap_copy(self, otherShopCard):
         # otherShopCard should be a ShopCard
@@ -208,6 +263,7 @@ class ShopCard(arcade.Sprite):
         self.angle = otherShopCard.angle
         self.change_stats('health', otherShopCard.health - self.health)
         self.change_stats('attack', otherShopCard.attack - self.attack)
+        self.update_shield('set', otherShopCard.shield)
         self.place_card_on_board(otherShopCard.cell_id)
 
 
@@ -418,9 +474,12 @@ class ShopView(arcade.View):
             hq_card.add_to_list(self.ship_spritelist)
             # 3) move card to the correct location 
             hq_card.set_position_cxy(hq_boardspace_sprite.position)
-
+            
             # record card position in card object's internal data
             hq_card.place_card_on_board(hq_space_id)
+
+            # TESTING ONLY, ADD SHIELD
+            hq_card.update_shield('set',10)
 
         self.first_time_shown = False
 
@@ -441,11 +500,7 @@ class ShopView(arcade.View):
             self.money = self.money - 3
 
             # move card from shop to ship spritelist
-            print(self.shop_spritelist)
-            #self.shop_spritelist.pop(self.shop_spritelist.index(shopcard))
             shopcard.add_to_list(self.ship_spritelist)
-
-            print(self.shop_spritelist)
 
         return purchase_success
 
@@ -751,9 +806,25 @@ class FightView(arcade.View):
 
     def calculate_hit(self, attacker_sprite: ShopCard, defender_sprite: ShopCard, update_action: dict, live_board_data: dict):
         
+
+        # calculate hit amount around shield
+        hit_amount = attacker_sprite.attack
+        shield_hit_amount = 0
+        if defender_sprite.shield > 0:
+            # shields block half of damage dealt rounded down
+            shield_hit_amount = int(math.floor(hit_amount / 2))
+
+            print("shield hit amount is: ", shield_hit_amount)
+
+            # if shield cant block full amount of damage, dmg equal to shield and pass on the rest
+            if defender_sprite.shield < shield_hit_amount:
+                shield_hit_amount = defender_sprite.shield
+
+            hit_amount = hit_amount - shield_hit_amount
+
+
         # should only be called when update action is a hit
-      
-        if attacker_sprite.attack >= defender_sprite.health:
+        if hit_amount >= defender_sprite.health:
             # room destroyed
             defender_sprite.hide_sprite()
 
@@ -764,7 +835,8 @@ class FightView(arcade.View):
 
         else:
             # update sprite health value and displayed health value
-            defender_sprite.change_stats("health", (-1 * attacker_sprite.attack))
+            defender_sprite.change_stats("health", (-1 * hit_amount))
+            defender_sprite.update_shield("add", (-1 * shield_hit_amount))
 
             print('defendersprite new health: ', defender_sprite.health)
             #print('defendersprite text sprite new health: ', defender_sprite.healthdisplay.text)
@@ -1029,8 +1101,6 @@ class FightView(arcade.View):
 
         self.clear()
 
-        
-    
     def on_hide_view(self):
         self.on_hide_view_function()
 
