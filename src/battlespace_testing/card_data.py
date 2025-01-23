@@ -94,7 +94,7 @@ card_dict = {
 
     'turret_2': {
         'in_shop': True,
-        'sprite_id': 'turret_2',
+        'sprite_id': 'void_collector',
         'tier': 1,
         'hp': 5,
         'atk': 1,
