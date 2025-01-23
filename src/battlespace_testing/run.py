@@ -74,6 +74,10 @@ class ShopCard(arcade.Sprite):
         self.max_energy = card_data['max_energy']
         self.current_energy = 0
 
+        # store modifiers to attack/health, so they can be correctly manipulated
+        # format [ {modifierID: (property, value)}, {etc.} ]
+        self.modifiers = []
+
         # start with shield if card has it (unusual)
         if not 'start_shield' in card_data.keys():
             self.shield = 0
@@ -108,8 +112,13 @@ class ShopCard(arcade.Sprite):
         self.ATTACKX = 0.3 * TILE_SIZE
         self.ATTACKY = 0.35 * TILE_SIZE
 
-        # this is the function triggered when card activated
-        self.act_function = card_data['act_function']
+        
+        # add functions to trigger in startofcombat/placement/activation if they are provided in card dictionary
+        for function_type in ['act_function', 'position_function', 'start_combat_function']:
+            if function_type in card_data.keys():
+                self.__setattr__(function_type, card_data[function_type])
+            else: 
+                self.__setattr__(function_type, None)
 
 
     def set_position_topleft(self, top, left):
@@ -254,7 +263,9 @@ class ShopCard(arcade.Sprite):
         self.alpha = 0
         self.healthdisplay.alpha = 0
         self.attackdisplay.alpha = 0
-        self.shielddisplay.alpha = 0
+        
+        if self.shielddisplay is not None:
+            self.shielddisplay.alpha = 0
 
     def become_cheap_copy(self, otherShopCard):
         # otherShopCard should be a ShopCard
@@ -609,6 +620,12 @@ class ShopView(arcade.View):
                 # update the board tiles position and remove it from our 'holding list
                 self.held_tile[0].set_position_cxy(board_tile_sprite[0].position)
                 self.held_tile = []
+
+                # rerun the position functions of all cards in the board
+                for sprite in self.ship_spritelist():
+                    if sprite.__class__.__name__ == "ShopCard" and hasattr(sprite, 'position_function'):
+                        sprite.position_function(sprite, self.ship_spritelist)
+                        
         
     def on_mouse_motion(self, _x, _y, dx, dy):
         
@@ -874,7 +891,6 @@ class FightView(arcade.View):
             self.fx_spritelist.append(end_text)
             return
         elif playerstatus[1] == 'dead':
-            print('showtext p2 dead')
             end_text = arcade.create_text_sprite(text = "Player 1 Won", start_x = 500, start_y = 500, color = arcade.csscolor.BLACK, font_size = 25, bold = True, font_name = "Cooper Black")
             self.fx_spritelist.append(end_text)
             return
@@ -962,7 +978,9 @@ class FightView(arcade.View):
                             #   target_id (target card uq string),
                             #  action (str of attack/heal/replace),
                             #   amount (numeric value of attacking cards attack power) }
-                            returned_actions = activated_board_obj['object'].act_function(activated_board_obj, self.player_board_data)   
+                            returned_actions = []
+                            if activated_board_obj['object'].act_function is not None:
+                                returned_actions = activated_board_obj['object'].act_function(activated_board_obj, self.player_board_data)   
 
                             # as the object returned above may have different lengths, we loop through and append to the board_updated variable declared above
                             for action in returned_actions:
