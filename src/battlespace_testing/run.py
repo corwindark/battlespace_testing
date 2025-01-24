@@ -54,6 +54,7 @@ class ShopCard(arcade.Sprite):
         
         # name of shop card to spawn in with
         self.card = card_id
+      
         
         #dictionary storing data about this unit
         card_data = card_dict[card_id]
@@ -68,6 +69,13 @@ class ShopCard(arcade.Sprite):
         scaleval = TILE_SIZE / width
         super().__init__(self.image_file_name, scale= scaleval, hit_box_algorithm = 'None')
         
+        # card info text
+        if 'description' in card_data.keys():
+            self.description = card_data['description']
+        else:
+            self.description = "No description for held card"
+
+
         # store details of card internally
         self.health = card_data['hp']
         self.attack = card_data['atk']
@@ -345,6 +353,10 @@ class ShopView(arcade.View):
         self.v_box.add(reroll_button.with_space_around(bottom=20))
         reroll_button.on_click = self.on_reroll_button
 
+        # debug text that explains the held card
+        self.held_card_info = "No card selected"
+
+
         self.manager.add(
             arcade.gui.UIAnchorWidget(
                 anchor_x="left",
@@ -599,8 +611,8 @@ class ShopView(arcade.View):
                     return
 
                 # place tile on board
-                print(board_tile_status[self.player_id])
-                print("placing card: ", self.held_tile[0].card, " at: ", cell_id )
+                #print(board_tile_status[self.player_id])
+                #print("placing card: ", self.held_tile[0].card, " at: ", cell_id )
 
                 # put the string ID of the card into the player's board
                 board_tile_status[self.player_id][cell_id] = self.held_tile[0].card
@@ -624,9 +636,9 @@ class ShopView(arcade.View):
                 # rerun the position functions of all cards in the board
                 for sprite in self.ship_spritelist:
                     if sprite.__class__.__name__ == "ShopCard" and sprite.position_function is not None:
-                        print("position function for:")
-                        print(sprite.card)
-                        print(sprite.position_function)
+                        #print("position function for:")
+                        #print(sprite.card)
+                        #print(sprite.position_function)
                         sprite.position_function(sprite, self.ship_spritelist)
                         
         
@@ -654,6 +666,11 @@ class ShopView(arcade.View):
         turn_text = "TURN: " + str(self.turn)
         arcade.draw_text(turn_text, overall_window_size[0]/15, 750, arcade.color.BLACK, font_size= 20, anchor_x= "left")
 
+        # show held card info
+        if len(self.held_tile) > 0:
+            arcade.draw_text(self.held_tile[0].description, overall_window_size[0]/3, 675, arcade.color.BLACK, font_size= 20, anchor_x= "center")
+        else:
+            arcade.draw_text(self.held_card_info, overall_window_size[0]/3, 675, arcade.color.BLACK, font_size= 20, anchor_x= "center")
 
         # display sprites
         self.manager.draw()
@@ -1038,7 +1055,8 @@ class FightView(arcade.View):
                                            end_x= target_sprite.center_x,
                                            end_y= target_sprite.center_y,
                                            parent_frame = self,
-                                           hit_params_to_pass =  calculate_hit_params)
+                                           hit_params_to_pass =  calculate_hit_params,
+                                           delay_amt= update['delay'])
                 update_bullet.position = acting_sprite.position
                 update_bullet.update_position()
                 self.bullet_spritelist.append(update_bullet)

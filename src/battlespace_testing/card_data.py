@@ -30,6 +30,31 @@ def get_adjacent_cards(acting_card, ship_spritelist):
     
     return returned_targets
 
+def get_cards_in_front_shop(acting_card, ship_spritelist):
+    # this function returns all allied cards in front of the acting card in the column
+
+    # identify the position we are evaluating
+    acting_column = acting_card.column
+    acting_row = acting_card.row
+
+    # save the adjacent room IDs
+    returned_targets = []
+
+    for sprite in ship_spritelist:
+
+        # only look at the card objects
+        if sprite.__class__.__name__ != "ShopCard": 
+            continue 
+        
+        # if row or column is 1 off, and other dimension the same, then it is an adjacent card
+        if acting_column == sprite.column and sprite.row < acting_row:
+            print('found 1 ahead in column', sprite.card)
+            returned_targets.append(sprite.cell_id)
+    
+    return returned_targets
+
+
+
 
 def get_first_enemy_card_in_same_row(acting_card, boardstate):
     # function will automatically target next column over if needed
@@ -86,7 +111,7 @@ def get_first_enemy_card_in_same_row(acting_card, boardstate):
 
 
 
-def turret_1_activation(acting_turret, boardstate):
+def basic_attack(acting_turret, boardstate):
     # this function is for the turret_1 card
     # it detailsi how the card will fun
 
@@ -94,9 +119,65 @@ def turret_1_activation(acting_turret, boardstate):
     targeted_card = get_first_enemy_card_in_same_row(acting_turret, boardstate)
 
     # change return form of list of [(target uq_id, change type ["attack", "heal", "replace"], animationID )]
-    attack_dict = {'author_id': acting_turret['uq_id'], 'player_id' : acting_turret['player'],'target_id': targeted_card, 'action': 'attack', 'amount': acting_turret['object'].attack}
+    attack_dict = {'author_id': acting_turret['uq_id'], 
+                   'player_id' : acting_turret['player'],
+                   'target_id': targeted_card, 
+                   'action': 'attack', 
+                   'amount': acting_turret['object'].attack,
+                   'delay': 0}
 
     return [attack_dict]
+
+def attack_twice(acting_turret, boardstate):
+    # this function is for the turret_1 card
+    # it detailsi how the card will fun
+
+    # return type for activation functions ()
+    targeted_card = get_first_enemy_card_in_same_row(acting_turret, boardstate)
+
+    # change return form of list of [(target uq_id, change type ["attack", "heal", "replace"], animationID )]
+    attack_1 = {'author_id': acting_turret['uq_id'], 
+                    'player_id' : acting_turret['player'],
+                    'target_id': targeted_card, 
+                    'action': 'attack', 
+                    'amount': acting_turret['object'].attack,
+                    'delay': 0}
+    
+    attack_2 = {'author_id': acting_turret['uq_id'], 
+                    'player_id' : acting_turret['player'],
+                    'target_id': targeted_card, 
+                    'action': 'attack', 
+                    'amount': acting_turret['object'].attack,
+                    'delay': 10}
+
+    return [attack_1, attack_2]
+
+
+def forward_turret_position(acting_card, ship_spritelist):
+    # updates attack based on the number of adjacent cards
+    MODIFIER_ID = 'front_bonus'
+
+    # get list of adjacent card IDs
+    front_cards = get_cards_in_front_shop(acting_card, ship_spritelist)
+
+    # 2 attack per empty adjacent space
+    added_attack = 2
+    if len(front_cards) > 0:
+        added_attack = 0
+
+    # check if buff already applied 
+    if MODIFIER_ID in acting_card.modifiers.keys():
+        # if buff already applied, remove old value 
+        # get old value
+        old_value = acting_card.modifiers[MODIFIER_ID][1]
+        # remove it
+        acting_card.change_stats('attack', (-1)*old_value)
+        # remove record from modifiers
+        acting_card.modifiers.pop(MODIFIER_ID, None)
+        
+    # if not applied, add modifier to list, and add attack
+    acting_card.modifiers[MODIFIER_ID] = ('attack', added_attack)
+    acting_card.change_stats('attack', added_attack) 
 
 
 
@@ -131,37 +212,12 @@ def void_collector_position(acting_card, ship_spritelist):
 
 
 card_dict = {
-    'turret_1': {
-        'in_shop': True,
-        'sprite_id': 'railgun_room_v0.1',
-        'tier': 1,
-        'hp': 5,
-        'atk': 10,
-        'max_energy': 2,
-        'on_energy_max': ['attack_function'],
-        'on_place_first': ['default'],
-        'on_place_any': ['default'],
-        'on_moved': ['default'],
-        'act_function': turret_1_activation
-    },
 
-    'turret_2': {
-        'in_shop': True,
-        'sprite_id': 'void_collector',
-        'tier': 1,
-        'hp': 5,
-        'atk': 1,
-        'max_energy': 2,
-        'on_energy_max': ['attack_function'],
-        'on_place_first': ['default'],
-        'on_place_any': ['default'],
-        'on_moved': ['default'],
-        'position_function': void_collector_position
-    },
-
+    # hq rooms for both players
     'hq_1': {
         'in_shop': False,
         'sprite_id': 'hq_1',
+        'description': 'HQ room, keep it alive',
         'tier': 1,
         'hp': 8,
         'atk': 0,
@@ -170,8 +226,91 @@ card_dict = {
         'on_place_first': ['default'],
         'on_place_any': ['default'],
         'on_moved': ['default']  
+    },    
+    
+    # basic tier1 turret 2/4
+    'turret_1': {
+        'in_shop': True,
+        'sprite_id': 'turret_1',
+        'description': 'Regular turret, shoots once',
+        'tier': 1,
+        'hp': 4, 
+        'atk': 2,
+        'max_energy': 2,
+        'on_energy_max': ['attack_function'],
+        'on_place_first': ['default'],
+        'on_place_any': ['default'],
+        'on_moved': ['default'],
+        'act_function': basic_attack
     },
 
+    # turret that gains 2 attack in front
+    'forward_turret': {
+        'in_shop': True,
+        'sprite_id': 'railgun_room_v0.1',
+        'description': 'Front turret, +2 atk if in front',
+        'tier': 1,
+        'hp': 3, 
+        'atk': 1,
+        'max_energy': 2,
+        'on_energy_max': ['attack_function'],
+        'on_place_first': ['default'],
+        'on_place_any': ['default'],
+        'on_moved': ['default'],
+        'act_function': basic_attack,
+        'position_function': forward_turret_position
+    },
+
+    # void turret that gains attack from empty rooms
+    'void_turret': {
+        'in_shop': True,
+        'sprite_id': 'void_collector',
+        'description': 'Void turret, +2 atk per adjacent empty tile',
+        'tier': 1,
+        'hp': 5,
+        'atk': 1,
+        'max_energy': 2,
+        'on_energy_max': ['attack_function'],
+        'on_place_first': ['default'],
+        'on_place_any': ['default'],
+        'on_moved': ['default'],
+        'position_function': void_collector_position,
+        'act_function': basic_attack
+    },
+
+    # shoots twice
+    'repeater_turret': {
+        'in_shop': True,
+        'sprite_id': 'turret_2',
+        'description': 'Repeater, shoots twice',
+        'tier': 1,
+        'hp': 3,
+        'atk': 1,
+        'max_energy': 2,
+        'on_energy_max': ['attack_function'],
+        'on_place_first': ['default'],
+        'on_place_any': ['default'],
+        'on_moved': ['default'],
+        'act_function': attack_twice
+    },
+    
+    # barrier wall, 0/6 stats, for tanking
+    'barrier_wall': {
+        'in_shop': True,
+        'sprite_id': 'tentacle_3',
+        'description': 'Barrier, no ability, absorbs damage',
+        'tier': 1,
+        'hp': 6,
+        'atk': 0,
+        'max_energy': 2,
+        'on_energy_max': ['attack_function'],
+        'on_place_first': ['default'],
+        'on_place_any': ['default'],
+        'on_moved': ['default']
+    },
+
+    #
+    
     'lightning_1': { 
         'in_shop': True,      
         'sprite_id': 'lightning_1',
