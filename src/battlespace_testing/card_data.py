@@ -23,9 +23,9 @@ def get_adjacent_cards(acting_card, ship_spritelist):
             continue 
         
         # if row or column is 1 off, and other dimension the same, then it is an adjacent card
-        if math.abs(acting_column - sprite.column) == 1 and (acting_row - sprite.row) == 0:
+        if abs(acting_column - sprite.column) == 1 and (acting_row - sprite.row) == 0:
             returned_targets.append(sprite.cell_id)
-        elif (acting_column - sprite.col) == 0 and math.abs(acting_row - sprite.row) == 1:
+        elif (acting_column - sprite.column) == 0 and abs(acting_row - sprite.row) == 1:
             returned_targets.append(sprite.cell_id)
     
     return returned_targets

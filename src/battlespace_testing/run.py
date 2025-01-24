@@ -75,8 +75,8 @@ class ShopCard(arcade.Sprite):
         self.current_energy = 0
 
         # store modifiers to attack/health, so they can be correctly manipulated
-        # format [ {modifierID: (property, value)}, {etc.} ]
-        self.modifiers = []
+        # format {modifierID: (property, value)}, {etc.} 
+        self.modifiers = {}
 
         # start with shield if card has it (unusual)
         if not 'start_shield' in card_data.keys():
@@ -93,6 +93,7 @@ class ShopCard(arcade.Sprite):
         self.healthdisplay = arcade.create_text_sprite(text = str(self.health),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25,bold = True,  font_name = "Cooper Black")
         self.attackdisplay = arcade.create_text_sprite(text = str(self.attack),start_x = 0, start_y = 0, color = arcade.csscolor.WHITE, font_size = 25, bold = True, font_name = "Henney Future")
         self.shielddisplay = None
+
         #= arcade.create_text_sprite(text = str(self.shield),start_x = 0, start_y = 0, color = arcade.csscolor.BLUE, font_size = 25, bold = True, font_name = "Henney Future")
         self.shieldposition = (0,0)
 
@@ -112,7 +113,6 @@ class ShopCard(arcade.Sprite):
         self.ATTACKX = 0.3 * TILE_SIZE
         self.ATTACKY = 0.35 * TILE_SIZE
 
-        
         # add functions to trigger in startofcombat/placement/activation if they are provided in card dictionary
         for function_type in ['act_function', 'position_function', 'start_combat_function']:
             if function_type in card_data.keys():
@@ -622,8 +622,11 @@ class ShopView(arcade.View):
                 self.held_tile = []
 
                 # rerun the position functions of all cards in the board
-                for sprite in self.ship_spritelist():
-                    if sprite.__class__.__name__ == "ShopCard" and hasattr(sprite, 'position_function'):
+                for sprite in self.ship_spritelist:
+                    if sprite.__class__.__name__ == "ShopCard" and sprite.position_function is not None:
+                        print("position function for:")
+                        print(sprite.card)
+                        print(sprite.position_function)
                         sprite.position_function(sprite, self.ship_spritelist)
                         
         
