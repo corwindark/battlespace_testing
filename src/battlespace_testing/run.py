@@ -323,6 +323,9 @@ class ShopView(arcade.View):
         self.board_spritelist: arcade.SpriteList = arcade.SpriteList()
         # list to hold the rooms actually purchased and in the players ship
         self.ship_spritelist: arcade.SpriteList = arcade.SpriteList()
+        # spritelist that only holds the sell space, lol
+        self.sell_spritelist: arcade.SpriteList = arcade.SpriteList()
+
         # use this for dif behavior for dragging store and regular cards
         self.holding_store_card = False
 
@@ -438,6 +441,8 @@ class ShopView(arcade.View):
             shop.top = shop_vertical_offset
             self.background_spritelist.append(shop)
 
+            
+
             tile_vertical_position = shop_vertical_offset - (shop_spacing_vert_pct * shop_tile_height)
             # build shop tile location mats
             for i in range(1,4):
@@ -477,7 +482,17 @@ class ShopView(arcade.View):
 
                     board_tile_status[self.player_id][count-1] = 'empty'  
 
-            
+            # add sell tile
+            sellspace = arcade.SpriteSolidColor(TILE_SIZE, TILE_SIZE, arcade.csscolor.RED )
+            sellspace.left = 1000
+            sellspace.top = 700
+            self.sell_spritelist.append(sellspace)
+
+
+            #shop.left = shop_horizontal_offset
+            #shop.top = shop_vertical_offset
+            #self.background_spritelist.append(shop)
+
             # create the HQ room and position it on the board
             # 1) create the card
             hq_id = "hq_1"
@@ -557,6 +572,9 @@ class ShopView(arcade.View):
         
         # if we are holding a card, check if we have place it somewhere
         if not self.held_tile == []:
+            
+
+            
             # look for background tiles at the point of mouse release    
             board_tile_sprite = arcade.get_sprites_at_point((_x, _y), self.board_spritelist)
 
@@ -565,6 +583,22 @@ class ShopView(arcade.View):
             #if old_position_found:
             old_board_tile_sprite = arcade.get_sprites_at_point(self.held_tile_original_position[0], self.board_spritelist)
             old_position_found =  (len(old_board_tile_sprite) > 0)
+
+
+            # check if dropped on sell space
+            background_sprite = arcade.get_sprites_at_point((_x, _y), self.sell_spritelist)
+            if background_sprite != []:
+                self.money += 1
+                board_tile_status[self.player_id][self.held_tile[0].cell_id] = 'empty'
+                tile = self.held_tile[0]
+                tile.hide_sprite()
+                returnCard()
+                tile.kill()
+                old_board_tile_sprite[0].alpha = 100
+                return
+
+
+
 
             # if there's no board tile at release site, send card back and end function
             if board_tile_sprite == []:
@@ -678,6 +712,7 @@ class ShopView(arcade.View):
         self.shop_spritelist.draw()
         self.board_spritelist.draw()
         self.ship_spritelist.draw()
+        self.sell_spritelist.draw()
 
 
 class FightView(arcade.View):

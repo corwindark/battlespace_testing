@@ -90,9 +90,6 @@ class BulletSprite(arcade.Sprite):
             self.kill() 
         
         
-        
-
-
         return 
     
 
