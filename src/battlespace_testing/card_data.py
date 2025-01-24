@@ -307,45 +307,6 @@ card_dict = {
         'on_place_first': ['default'],
         'on_place_any': ['default'],
         'on_moved': ['default']
-    },
-
-    #
-    
-    'lightning_1': { 
-        'in_shop': True,      
-        'sprite_id': 'lightning_1',
-        'hp': 8,
-        'atk': 2,
-        'max_energy': 3
-    },
-    'lightning_2': {    
-        'in_shop': True,   
-        'sprite_id': 'lightning_2',
-        'hp': 8,
-        'atk': 5,
-        'max_energy': 2
-    },
-    'portal_1': {
-        
-        'in_shop': True,       
-        'sprite_id': 'portal_1',
-        'hp': 8,
-        'atk': 0,
-        'max_energy': 3
-    },
-    'tentacle_1': {  
-        'in_shop': True,     
-        'sprite_id': 'tentacle_1',
-        'hp': 8,
-        'atk': 0,
-        'max_energy': 3
-    },
-    'tentacle_2': { 
-        'in_shop': True,      
-        'sprite_id': 'tentacle_2',
-        'hp': 8,
-        'atk': 0,
-        'max_energy': 3
     }
 }
 
