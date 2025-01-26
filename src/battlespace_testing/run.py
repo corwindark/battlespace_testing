@@ -291,6 +291,8 @@ class ShopCard(arcade.Sprite):
         self.change_stats('attack', otherShopCard.attack - self.attack)
         self.update_shield('set', otherShopCard.shield)
         self.place_card_on_board(otherShopCard.cell_id)
+        self.uq_card_number = otherShopCard.uq_card_number
+        self.modifiers = otherShopCard.modifiers.copy()
 
 
 
@@ -675,12 +677,13 @@ class ShopView(arcade.View):
                 self.held_tile = []
 
                 # rerun the position functions of all cards in the board
-                for sprite in self.ship_spritelist:
-                    if sprite.__class__.__name__ == "ShopCard" and sprite.position_function is not None:
-                        #print("position function for:")
-                        #print(sprite.card)
-                        #print(sprite.position_function)
-                        sprite.position_function(sprite, self.ship_spritelist)
+                for i in range(0,2):
+                    for sprite in self.ship_spritelist:
+                        if sprite.__class__.__name__ == "ShopCard" and sprite.position_function is not None:
+                            #print("position function for:")
+                            #print(sprite.card)
+                            #print(sprite.position_function)
+                            sprite.position_function(sprite, self.ship_spritelist)
                         
         
     def on_mouse_motion(self, _x, _y, dx, dy):
@@ -832,7 +835,12 @@ class FightView(arcade.View):
         # record view is now shown    
         self.viewShown = True
         print('passed ui manager enable')
-        
+
+        # try wiping player spritelists just because
+        self.player1_board_sprites = arcade.SpriteList()
+        self.player2_board_sprites = arcade.SpriteList()
+        self.player_board_data = {}
+
         # copy player sprites
         for sprite in self.player1shop.ship_spritelist:
             # only proceede if sprite is a shopcard
@@ -841,8 +849,10 @@ class FightView(arcade.View):
             
             # create new shopcard of the same card type as the player ship card
             copyCard = ShopCard(sprite.card)
+
             # use built-in function to make it a visual/stat copy of the input
             copyCard.become_cheap_copy(sprite)
+
             copyCard.add_to_list(self.player1_board_sprites)
         
         #print(len(self.player1_board_sprites))
@@ -856,8 +866,10 @@ class FightView(arcade.View):
             
             # create new shopcard of the same card type as the player ship card
             copyCard = ShopCard(sprite.card)
+
             # use built-in function to make it a visual/stat copy of the input
             copyCard.become_cheap_copy(sprite)
+
             copyCard.add_to_list(self.player2_board_sprites)       
 
         # rotate boards
@@ -919,6 +931,8 @@ class FightView(arcade.View):
 
             print('defendersprite new health: ', defender_sprite.health)
             #print('defendersprite text sprite new health: ', defender_sprite.healthdisplay.text)
+
+        
 
     def advance_fight(self, step = None, update_board = True):
 
@@ -1046,7 +1060,8 @@ class FightView(arcade.View):
 
                             # as the object returned above may have different lengths, we loop through and append to the board_updated variable declared above
                             for action in returned_actions:
-                                board_updates.append(action)
+                                if action is not None:
+                                    board_updates.append(action)
                 
                     # if we did find cards in the row, count this as a step in current player's fight resolution
                     if found_active_cards_in_row == True:
@@ -1078,17 +1093,15 @@ class FightView(arcade.View):
             # animation portion
             if update['action'] == 'attack':
                 
-                # run the actual damage/destroying calculations
-                """self.calculate_hit(update_action = update, 
-                                   attacker_sprite = acting_sprite, 
-                                   defender_sprite = target_sprite, 
-                                   live_board_data = self.player_board_data)"""
+                print('attack details: ', update)
+                print('attack amount: ', update['amount'])
                 
                 calculate_hit_params = {'update_action': update, 
                                    'attacker_sprite': acting_sprite, 
                                    'defender_sprite': target_sprite, 
                                    'live_board_data': self.player_board_data}
 
+                
                 # shoot bullet
                 update_bullet = bullet_sprite.BulletSprite(image_txt = 'lightning_2', 
                                            bullet_px_size = 10 *  math.sqrt(update['amount']), 
@@ -1129,6 +1142,17 @@ class FightView(arcade.View):
                     # add target line to FX spritelist that is wiped every step
                     self.fx_spritelist.append(targetline)"""
     
+
+        # run all rooms positional updates??
+        # make temp spritelists just for this??
+        for i in range(0,2):
+            for key, tile in self.player_board_data.items():
+                if tile['object'].position_function is not None:
+                    if tile['player'] == 0:
+                        tile['object'].position_function(tile['object'], self.player1_board_sprites)
+                    elif tile['player'] == 1:
+                        tile['object'].position_function(tile['object'], self.player2_board_sprites)
+
         # update fight step so next function call will trigger the next action in the fight
         self.fight_step += 1
 
@@ -1172,8 +1196,8 @@ class FightView(arcade.View):
 
         # RESET EVERYTHING
         # VERY CLUNKY
-        self.player1_board_sprites.clear()
-        self.player2_board_sprites.clear()
+        #self.player1_board_sprites.clear()
+        #self.player2_board_sprites.clear()
         self.fx_spritelist.clear()
         self.viewShown = False
         self.player_board_data = {}

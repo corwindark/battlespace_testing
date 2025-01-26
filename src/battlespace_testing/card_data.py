@@ -30,6 +30,32 @@ def get_adjacent_cards(acting_card, ship_spritelist):
     
     return returned_targets
 
+def get_adjacent_cards_fight(acting_card, boardstate):
+    # this function returns the cards which are adjacent to the acting card, in shopscreen spritelist
+
+    # identify the position we are evaluating for adjacency.
+    acting_column = acting_card['object'].column
+    acting_row = acting_card['object'].row
+
+    # save the adjacent room IDs
+    returned_targets = []
+
+    for key, object in boardstate.items():
+
+        sprite = object['object']
+        
+        # only look at the card objects
+        if sprite.__class__.__name__ != "ShopCard" or object['player'] != acting_card['player']: 
+            continue 
+        
+        # if row or column is 1 off, and other dimension the same, then it is an adjacent card
+        if abs(acting_column - sprite.column) == 1 and (acting_row - sprite.row) == 0:
+            returned_targets.append(sprite.cell_id)
+        elif (acting_column - sprite.column) == 0 and abs(acting_row - sprite.row) == 1:
+            returned_targets.append(sprite.cell_id)
+    
+    return returned_targets
+
 def get_cards_in_front_shop(acting_card, ship_spritelist):
     # this function returns all allied cards in front of the acting card in the column
 
@@ -152,6 +178,7 @@ def basic_attack(acting_turret, boardstate):
 
     return [attack_dict]
 
+
 def attack_twice(acting_turret, boardstate):
     # this function is for the turret_1 card
     # it detailsi how the card will fun
@@ -175,6 +202,40 @@ def attack_twice(acting_turret, boardstate):
                     'delay': 10}
 
     return [attack_1, attack_2]
+
+
+
+#
+def shield_surger_action(acting_card, boardstate):
+    # give shield to a random adjacent room
+    # not actually using modifier for fight buffs I think
+    MODIFIER_ID = 'shield_surged_' + str(acting_card['object'].uq_card_number)
+
+    # return type for activation functions ()
+    # returns cell_ids of the rooms
+    adj_rooms = get_adjacent_cards_fight(acting_card, boardstate)
+
+    # pick one of the cell IDs randomly
+    target = 0
+    if len(adj_rooms) > 0:
+        target = adj_rooms[ random.randint(0, len(adj_rooms)-1) ]
+    else:
+        return
+    
+    print("TARGET FOR SHIELD SURGER: ", target)
+
+    # add 2 shields to the room object
+    for key, object in boardstate.items():
+        if object['player'] == acting_card['player'] and object['cell_id']  == target:
+            object['object'].update_shield('add', 2)
+    
+    return [None]
+
+
+
+
+## position functions 
+##
 
 
 def forward_turret_position(acting_card, ship_spritelist):
@@ -264,7 +325,37 @@ def shield_giver_position(acting_card, ship_spritelist):
             card.update_shield('add', shield_to_grant) 
 
 
+def light_spear_position(acting_card, ship_spritelist):
+
+    print('current attack: ', acting_card.attack, 'current shield', acting_card.shield)
+    print('modifiers: ', acting_card.modifiers)
+
+    # updates attack based on the number of adjacent cards
+    MODIFIER_ID = 'shield_bonus'
+
+    added_attack = 0
+    if acting_card.shield > 0:
+        added_attack = 2
+
+    # check if buff already applied 
+    if MODIFIER_ID in acting_card.modifiers.keys():
+
+        if acting_card.attack == 1:
+            print("EEROR SHIELD ATTACK CALL")
+            print(acting_card.modifiers)
+            print(MODIFIER_ID)
+        # if buff already applied, remove old value 
+        # get old value
+        old_value = acting_card.modifiers[MODIFIER_ID][1]
+        # remove it
+        acting_card.change_stats('attack', (-1)*old_value)
+        # remove record from modifiers
+        acting_card.modifiers.pop(MODIFIER_ID, None)
     
+    if added_attack > 0:
+        # if not applied, add modifier to list, and add attack
+        acting_card.modifiers[MODIFIER_ID] = ('attack', added_attack)
+        acting_card.change_stats('attack', added_attack)     
 
 
 card_dict = {
@@ -375,7 +466,33 @@ card_dict = {
         'max_energy': 2,
         'on_energy_max': ['attack_function'],
         'position_function': shield_giver_position
+    },
+
+    'light_spear': {
+        'in_shop': True,
+        'sprite_id': 'light_spear',
+        'description': 'Gains +3 attack when shielded',
+        'tier': 1,
+        'hp': 3,
+        'atk': 1,
+        'max_energy': 2,
+        'on_energy_max': ['attack_function'],
+        'act_function': basic_attack,
+        'position_function': light_spear_position
+    },
+
+    'shield_surger': {
+        'in_shop': True,
+        'sprite_id': 'shield_surger',
+        'description': 'Gives +2 shield to one random adjacent room',
+        'tier': 1,
+        'hp': 2,
+        'atk': 0,
+        'max_energy': 2,
+        'on_energy_max': ['attack_function'],
+        'act_function': shield_surger_action
     }
+
 
 }
 

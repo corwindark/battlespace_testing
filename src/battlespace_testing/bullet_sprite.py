@@ -71,7 +71,7 @@ class BulletSprite(arcade.Sprite):
         # Angle the bullet sprite
         self.angle = math.degrees(angle)
 
-        print( abs(dest_x - curr_x + self.change_x) )
+        #print( abs(dest_x - curr_x + self.change_x) )
 
     def on_check(self):
 
@@ -81,7 +81,7 @@ class BulletSprite(arcade.Sprite):
 
         # if distance from target is less than one step, proc hit
         if abs(self.end_x - self.position[0]) - abs(self.change_x) <= abs(self.change_x) and abs(self.end_y - self.position[1]) - abs(self.change_y) <= abs(self.change_y) :
-            print('hit triggered, updates: ', self.updates)
+            #print('hit triggered, updates: ', self.updates)
             
             self.frame.calculate_hit(update_action = self.hit_params['update_action'],
                                      attacker_sprite = self.hit_params['attacker_sprite'],
@@ -89,7 +89,7 @@ class BulletSprite(arcade.Sprite):
                                      live_board_data = self.hit_params['live_board_data'])
             self.kill() 
         
-        
+
         return 
     
 
