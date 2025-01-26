@@ -45,8 +45,8 @@ def get_adjacent_cards_fight(acting_card, boardstate):
         sprite = object['object']
         
         # only look at the card objects
-        if sprite.__class__.__name__ != "ShopCard" or object['player'] != acting_card['player']: 
-            continue 
+        if sprite.__class__.__name__ != "ShopCard" or object['player'] != acting_card['player'] or object['status'] != "alive": 
+            continue    
         
         # if row or column is 1 off, and other dimension the same, then it is an adjacent card
         if abs(acting_column - sprite.column) == 1 and (acting_row - sprite.row) == 0:
@@ -76,8 +76,33 @@ def get_cards_in_front_shop(acting_card, ship_spritelist):
         if acting_column == sprite.column and sprite.row < acting_row:
             print('found 1 ahead in column', sprite.card)
             returned_targets.append(sprite.cell_id)
-    
+
     return returned_targets
+
+def get_cards_behind_shop(acting_card, ship_spritelist):
+    # this function returns all allied cards in front of the acting card in the column
+
+    # identify the position we are evaluating
+    acting_column = acting_card.column
+    acting_row = acting_card.row
+
+    # save the adjacent room IDs
+    returned_targets = []
+
+    for sprite in ship_spritelist:
+
+        # only look at the card objects
+        if sprite.__class__.__name__ != "ShopCard": 
+            continue 
+        
+        # if row or column is 1 off, and other dimension the same, then it is an adjacent card
+        if acting_column == sprite.column and sprite.row < acting_row:
+            print('found 1 ahead in column', sprite.card)
+            returned_targets.append(sprite.cell_id)
+
+    return returned_targets
+
+
 
 def get_card_in_front_shop(acting_card, ship_spritelist):
     # this function returns all allied cards in front of the acting card in the column
@@ -306,7 +331,7 @@ def shield_giver_position(acting_card, ship_spritelist):
         # check if buff already applied 
         if MODIFIER_ID in card.modifiers.keys():
 
-            print('old shield buff found')
+            #print('old shield buff found')
 
             # if buff already applied, remove old value 
             # get old value
@@ -318,7 +343,7 @@ def shield_giver_position(acting_card, ship_spritelist):
         
         if len(card_in_front) > 0 and card.uq_card_number == card_in_front[0]:
 
-            print('card buffed with shield')
+            #print('card buffed with shield')
 
             # if not applied, add modifier to list, and add attack
             card.modifiers[MODIFIER_ID] = ('shield', shield_to_grant)
@@ -327,8 +352,8 @@ def shield_giver_position(acting_card, ship_spritelist):
 
 def light_spear_position(acting_card, ship_spritelist):
 
-    print('current attack: ', acting_card.attack, 'current shield', acting_card.shield)
-    print('modifiers: ', acting_card.modifiers)
+    #print('current attack: ', acting_card.attack, 'current shield', acting_card.shield)
+    #print('modifiers: ', acting_card.modifiers)
 
     # updates attack based on the number of adjacent cards
     MODIFIER_ID = 'shield_bonus'
@@ -340,10 +365,6 @@ def light_spear_position(acting_card, ship_spritelist):
     # check if buff already applied 
     if MODIFIER_ID in acting_card.modifiers.keys():
 
-        if acting_card.attack == 1:
-            print("EEROR SHIELD ATTACK CALL")
-            print(acting_card.modifiers)
-            print(MODIFIER_ID)
         # if buff already applied, remove old value 
         # get old value
         old_value = acting_card.modifiers[MODIFIER_ID][1]
