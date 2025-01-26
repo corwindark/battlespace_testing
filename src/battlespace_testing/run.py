@@ -50,13 +50,18 @@ cardret = card_data.card_return()
 card_dict = cardret.get_card_dictionary()
 cardlist = list(card_dict)
 
+# all card objects get an increasing UQ id, used to identify modifiers
+UQ_ID_NUMBER = 0
+
 class ShopCard(arcade.Sprite):
     
     def __init__(self, card_id):
-        
+        global UQ_ID_NUMBER
+
         # name of shop card to spawn in with
         self.card = card_id
-      
+        self.uq_card_number = UQ_ID_NUMBER
+        UQ_ID_NUMBER += 1
         
         #dictionary storing data about this unit
         card_data = card_dict[card_id]
@@ -1184,6 +1189,9 @@ class FightView(arcade.View):
     
 
 def main():
+    
+    # card UQ id numbers
+
 
     window = arcade.Window(overall_window_size[0], overall_window_size[1], 'test')
     #window = arcade.Window(overall_window_size[0], 2000, 'test')
