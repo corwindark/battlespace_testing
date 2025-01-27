@@ -74,7 +74,7 @@ def get_cards_in_front_shop(acting_card, ship_spritelist):
         
         # if row or column is 1 off, and other dimension the same, then it is an adjacent card
         if acting_column == sprite.column and sprite.row < acting_row:
-            print('found 1 ahead in column', sprite.card)
+            #print('found 1 ahead in column', sprite.card)
             returned_targets.append(sprite.cell_id)
 
     return returned_targets
@@ -96,8 +96,8 @@ def get_cards_behind_shop(acting_card, ship_spritelist):
             continue 
         
         # if row or column is 1 off, and other dimension the same, then it is an adjacent card
-        if acting_column == sprite.column and sprite.row < acting_row:
-            print('found 1 ahead in column', sprite.card)
+        if acting_column == sprite.column and sprite.row > acting_row:
+            #print('found 1 ahead in column', sprite.card)
             returned_targets.append(sprite.cell_id)
 
     return returned_targets
@@ -122,7 +122,7 @@ def get_card_in_front_shop(acting_card, ship_spritelist):
         
         # if row or column is 1 off, and other dimension the same, then it is an adjacent card
         if acting_column == sprite.column and sprite.row == (acting_row-1):
-            print('found a card ahead in column', sprite.card)
+            #print('found a card ahead in column', sprite.card)
 
             found_card_id = sprite.uq_card_number
             returned_targets.append(found_card_id)
@@ -184,6 +184,29 @@ def get_first_enemy_card_in_same_row(acting_card, boardstate):
 
     # if no tile in same column, move towards middle (3)
 
+def get_all_enemy_cards_in_same_row(acting_card, boardstate):
+    # get all the cards in the target column so a 'laser' can attack them all at once
+
+    # get targeted card in conventional targeting
+    target_card = get_first_enemy_card_in_same_row(acting_card, boardstate)
+    
+    # target col
+    target_col = boardstate[target_card]['col']
+
+    # record all cards
+    targeted_cards = []
+
+
+    # retrieve all cards behind it
+    for key, tile in boardstate.items():
+        
+        if tile['player'] != acting_card['player'] and tile['col'] == target_col: 
+            targeted_cards.append(key)
+
+    # return list of enemy cards in the row
+    return targeted_cards
+
+
 
 
 def basic_attack(acting_turret, boardstate):
@@ -203,6 +226,28 @@ def basic_attack(acting_turret, boardstate):
 
     return [attack_dict]
 
+def laser_attack(acting_turret, boardstate):
+    # this function is for the turret_1 card
+    # it detailsi how the card will fun
+
+    # return type for activation functions ()
+    targeted_cards = get_all_enemy_cards_in_same_row(acting_turret, boardstate)
+
+    attack_action_list = []
+
+    for target in targeted_cards:
+    
+        # change return form of list of [(target uq_id, change type ["attack", "heal", "replace"], animationID )]
+        attack_dict = {'author_id': acting_turret['uq_id'], 
+                    'player_id' : acting_turret['player'],
+                    'target_id': target, 
+                    'action': 'attack', 
+                    'amount': acting_turret['object'].attack,
+                    'delay': 0}
+        
+        attack_action_list.append(attack_dict)
+
+    return attack_action_list
 
 def attack_twice(acting_turret, boardstate):
     # this function is for the turret_1 card
@@ -247,7 +292,7 @@ def shield_surger_action(acting_card, boardstate):
     else:
         return
     
-    print("TARGET FOR SHIELD SURGER: ", target)
+    #print("TARGET FOR SHIELD SURGER: ", target)
 
     # add 2 shields to the room object
     for key, object in boardstate.items():
@@ -290,7 +335,6 @@ def forward_turret_position(acting_card, ship_spritelist):
     acting_card.change_stats('attack', added_attack) 
 
 
-
 def void_collector_position(acting_card, ship_spritelist):
     # updates attack based on the number of adjacent cards
     MODIFIER_ID = 'void_bonus'
@@ -314,6 +358,7 @@ def void_collector_position(acting_card, ship_spritelist):
     # if not applied, add modifier to list, and add attack
     acting_card.modifiers[MODIFIER_ID] = ('attack', added_attack)
     acting_card.change_stats('attack', added_attack) 
+
 
 def shield_giver_position(acting_card, ship_spritelist):
     # updates attack based on the number of adjacent cards
@@ -355,7 +400,7 @@ def light_spear_position(acting_card, ship_spritelist):
     #print('current attack: ', acting_card.attack, 'current shield', acting_card.shield)
     #print('modifiers: ', acting_card.modifiers)
 
-    # updates attack based on the number of adjacent cards
+    # grants attack if card is shielded
     MODIFIER_ID = 'shield_bonus'
 
     added_attack = 0
@@ -377,6 +422,57 @@ def light_spear_position(acting_card, ship_spritelist):
         # if not applied, add modifier to list, and add attack
         acting_card.modifiers[MODIFIER_ID] = ('attack', added_attack)
         acting_card.change_stats('attack', added_attack)     
+
+
+def railgun_position(acting_card, ship_spritelist):
+    # updates attack based on the number of adjacent cards
+    MODIFIER_ID = 'railgun'
+
+    # get list of cards in front and behind
+    front_cards = get_cards_in_front_shop(acting_card, ship_spritelist)
+    back_cards = get_cards_behind_shop(acting_card, ship_spritelist )
+
+    # attack this card will have (0 for all non-back railguns)
+    this_attack = 0
+
+    # how many railguns in a row ahead of this one
+    rails_ahead = 0
+    rails_behind = 0
+
+
+    # check which cell ids are railguns (card ID: railgun)
+    for card in ship_spritelist:
+        if card.__class__.__name__ != "ShopCard": 
+            continue 
+        
+        if card.card == 'railgun' and card.cell_id in front_cards:
+            rails_ahead += 1
+        
+    
+        if card.card == 'railgun' and card.cell_id in back_cards:
+            rails_behind += 1
+        
+    # set attack according to formula
+    if rails_behind > 0:
+        this_attack = 0
+    elif rails_ahead > 0:
+        this_attack = 2 + (6* (rails_ahead-1))
+
+
+    # check if buff already applied 
+    if MODIFIER_ID in acting_card.modifiers.keys():
+        # if buff already applied, remove old value 
+        # get old value
+        old_value = acting_card.modifiers[MODIFIER_ID][1]
+        # remove it
+        acting_card.change_stats('attack', (-1)*old_value)
+        # remove record from modifiers
+        acting_card.modifiers.pop(MODIFIER_ID, None)
+        
+    # if not applied, add modifier to list, and add attack
+    acting_card.modifiers[MODIFIER_ID] = ('attack', this_attack)
+    acting_card.change_stats('attack', this_attack) 
+
 
 
 card_dict = {
@@ -415,7 +511,7 @@ card_dict = {
     # turret that gains 2 attack in front
     'forward_turret': {
         'in_shop': True,
-        'sprite_id': 'railgun_room_v0.1',
+        'sprite_id': 'front_turret',
         'description': 'Front turret, +2 atk if in front',
         'tier': 1,
         'hp': 3, 
@@ -434,7 +530,7 @@ card_dict = {
         'in_shop': True,
         'sprite_id': 'void_collector',
         'description': 'Void turret, +2 atk per adjacent empty tile',
-        'tier': 1,
+        'tier': 2,
         'hp': 5,
         'atk': 1,
         'max_energy': 2,
@@ -451,7 +547,7 @@ card_dict = {
         'in_shop': True,
         'sprite_id': 'turret_2',
         'description': 'Repeater, shoots twice',
-        'tier': 1,
+        'tier': 2,
         'hp': 3,
         'atk': 1,
         'max_energy': 2,
@@ -512,6 +608,22 @@ card_dict = {
         'max_energy': 2,
         'on_energy_max': ['attack_function'],
         'act_function': shield_surger_action
+    },
+
+    'railgun': {
+        'in_shop': True,
+        'sprite_id': 'railgun_room_v0.1',
+        'description': 'Railgun: Massive attack scale when stacked',
+        'tier': 3,
+        'hp': 3, 
+        'atk': 0,
+        'max_energy': 2,
+        'on_energy_max': ['attack_function'],
+        'on_place_first': ['default'],
+        'on_place_any': ['default'],
+        'on_moved': ['default'],
+        'act_function': laser_attack,
+        'position_function': railgun_position
     }
 
 

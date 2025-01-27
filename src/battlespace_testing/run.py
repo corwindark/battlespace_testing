@@ -323,7 +323,9 @@ class ShopView(arcade.View):
         # record if this is the first time the view has been shown
         self.first_time_shown = True
         # record which turn this is
-        self.turn = 0
+        self.turn = 1
+        # record the current tier of the shop
+        self.tier = 1
         # list to hold base sprites
         self.background_spritelist: arcade.SpriteList = arcade.SpriteList()
         # list to hold shop sprites
@@ -410,7 +412,7 @@ class ShopView(arcade.View):
                 card_selection = cardlist[random.randint(0,len(cardlist)-1)]
                 card_data = card_dict[card_selection]
 
-                if card_data['in_shop'] is False:
+                if card_data['in_shop'] is False or card_data['tier'] > self.tier:
                     card_selection = ""
                 
                 #
@@ -526,9 +528,12 @@ class ShopView(arcade.View):
             hq_card.place_card_on_board(hq_space_id)
 
             # TESTING ONLY, ADD SHIELD
-            hq_card.update_shield('set',10)
+            #hq_card.update_shield('set',10)
 
         self.first_time_shown = False
+
+        # update our tier in later turns
+        self.tier = math.ceil((self.turn - 1) / 2 )
 
         # fill the shop with first set of cards
         self.roll_shop(False)
@@ -705,10 +710,16 @@ class ShopView(arcade.View):
 
         # display current money
         money_text = "$" + str(self.money)
-        arcade.draw_text(money_text, overall_window_size[0]/10, 700, arcade.color.BLACK, font_size= 20, anchor_x= "left")
+        arcade.draw_text(money_text, overall_window_size[0]/10, 650, arcade.color.BLACK, font_size= 20, anchor_x= "left")
 
+        # display turn
         turn_text = "TURN: " + str(self.turn)
         arcade.draw_text(turn_text, overall_window_size[0]/15, 750, arcade.color.BLACK, font_size= 20, anchor_x= "left")
+
+        # display shop tier
+        tier_text = "TIER: " + str(self.tier)
+        arcade.draw_text(tier_text, overall_window_size[0]/15, 700, arcade.color.BLACK, font_size= 20, anchor_x= "left")
+
 
         # show held card info
         if len(self.held_tile) > 0:
@@ -1008,6 +1019,7 @@ class FightView(arcade.View):
                     
                     # track if this row has active cards, if it doesn't, we don't count it as a step in the fight
                     found_active_cards_in_row = False
+                    found_destroyed_cards_in_row = False
 
                     for column in range(0,7):
 
@@ -1020,6 +1032,7 @@ class FightView(arcade.View):
                             
                                 # dont activate if room destroyed
                                 if board_obj_data['status'] == 'destroyed':
+                                    found_destroyed_cards_in_row = True
                                     continue
                                 
                                 # if all conditions met, pass on the object's data to be activated
@@ -1064,7 +1077,7 @@ class FightView(arcade.View):
                                     board_updates.append(action)
                 
                     # if we did find cards in the row, count this as a step in current player's fight resolution
-                    if found_active_cards_in_row == True:
+                    if found_active_cards_in_row == True or found_destroyed_cards_in_row == True:
                         if player_number == 0:
                             req_step_p1 += 1
                         if player_number == 1:
