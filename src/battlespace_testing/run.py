@@ -10,7 +10,7 @@ import math
 #from battlespace_testing import card_data
 #from cards import get_card_dictionary
 #from battlespace_testing import card_data, bullet_sprite
-import card_data
+import src.battlespace_testing.card_data
 import bullet_sprite
 import copy
 
@@ -98,6 +98,13 @@ class ShopCard(arcade.Sprite):
             self.shield = 0
         else:
             self.shield = card_data['start_shield']
+        # shield power used to help shield cards provide more shield
+        self.shield_power = 0
+        # shield hit ratio which determines how much dmg shields can take
+        if not 'shield_hit_ratio' in card_data.keys():
+            self.shield_hit_ratio = 0.5
+        else:
+            self.shield_hit_ratio = card_data['shield_hit_ratio']
 
         # position details for combat
         self.cell_id: int
@@ -290,6 +297,8 @@ class ShopCard(arcade.Sprite):
         self.change_stats('health', otherShopCard.health - self.health)
         self.change_stats('attack', otherShopCard.attack - self.attack)
         self.update_shield('set', otherShopCard.shield)
+        self.shield_power = otherShopCard.shield_power
+        self.shield_hit_ratio = otherShopCard.shield_hit_ratio
         self.place_card_on_board(otherShopCard.cell_id)
         self.uq_card_number = otherShopCard.uq_card_number
         self.modifiers = otherShopCard.modifiers.copy()
@@ -914,7 +923,7 @@ class FightView(arcade.View):
         shield_hit_amount = 0
         if defender_sprite.shield > 0:
             # shields block half of damage dealt rounded down
-            shield_hit_amount = int(math.floor(hit_amount / 2))
+            shield_hit_amount = int(math.floor(hit_amount * defender_sprite.shield_hit_ratio))
 
             print("shield hit amount is: ", shield_hit_amount)
 

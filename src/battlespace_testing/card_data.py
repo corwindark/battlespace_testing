@@ -206,6 +206,19 @@ def get_all_enemy_cards_in_same_row(acting_card, boardstate):
     # return list of enemy cards in the row
     return targeted_cards
 
+def get_ally_cards_in_same_row(acting_card, boardstate):
+    # returns the acting card's adjacent friendly rooms in the same row
+
+    # records the card's uq_ids
+    targeted_cards = []
+
+    for key,tile in boardstate.items():
+        
+        # get all cards with same row but different column
+        if tile['player'] == acting_card['player'] and tile['row'] == acting_card['row'] and tile['col'] != acting_card['col']:
+            targeted_cards.append(key)
+    
+    return targeted_cards
 
 
 
@@ -225,6 +238,25 @@ def basic_attack(acting_turret, boardstate):
                    'delay': 0}
 
     return [attack_dict]
+
+
+def shield_discharger_attack(acting_turret, boardstate):
+    # this card does a basic attack and grants shields to rooms in same row
+
+    # shield amt (including shield power)
+    shield_amt = 1 + acting_turret['object'].shield_power
+
+    # first, get the basic attack data (will be returned at the end)
+    attack_data = basic_attack(acting_turret, boardstate)
+    
+    # then, find all friendly cards in same row
+    neighbor_friendly_cards = get_ally_cards_in_same_row(acting_turret, boardstate)
+
+    for uq_id in neighbor_friendly_cards:
+        boardstate[uq_id]['object'].update_shield('add', shield_amt)
+
+    return attack_data
+
 
 def laser_attack(acting_turret, boardstate):
     # this function is for the turret_1 card
@@ -285,6 +317,9 @@ def shield_surger_action(acting_card, boardstate):
     # returns cell_ids of the rooms
     adj_rooms = get_adjacent_cards_fight(acting_card, boardstate)
 
+    shield_amt = 2 + acting_card['object'].shield_power
+
+    print('surger shield power: ', acting_card['object'].shield_power)
     # pick one of the cell IDs randomly
     target = 0
     if len(adj_rooms) > 0:
@@ -297,7 +332,7 @@ def shield_surger_action(acting_card, boardstate):
     # add 2 shields to the room object
     for key, object in boardstate.items():
         if object['player'] == acting_card['player'] and object['cell_id']  == target:
-            object['object'].update_shield('add', 2)
+            object['object'].update_shield('add', shield_amt)
     
     return [None]
 
@@ -367,7 +402,7 @@ def shield_giver_position(acting_card, ship_spritelist):
     # get list of adjacent card IDs
     card_in_front = get_card_in_front_shop(acting_card, ship_spritelist)
 
-    shield_to_grant = 2
+    shield_to_grant = 2 + acting_card.shield_power
 
     for card in ship_spritelist:
         if card.__class__.__name__ != "ShopCard": 
@@ -393,6 +428,40 @@ def shield_giver_position(acting_card, ship_spritelist):
             # if not applied, add modifier to list, and add attack
             card.modifiers[MODIFIER_ID] = ('shield', shield_to_grant)
             card.update_shield('add', shield_to_grant) 
+
+def shield_buffer_position(acting_card, ship_spritelist):
+    # updates attack based on the number of adjacent cards
+    MODIFIER_ID = 'shield_buffer_' + str(acting_card.uq_card_number)
+
+    # get list of adjacent card IDs
+    adj_cards = get_adjacent_cards(acting_card, ship_spritelist)
+
+    shield_power = 2
+
+    for card in ship_spritelist:
+        if card.__class__.__name__ != "ShopCard": 
+            continue 
+        
+        # check if buff already applied 
+        if MODIFIER_ID in card.modifiers.keys():
+
+            #print('old shield buff found')
+
+            # if buff already applied, remove old value 
+            # get old value
+            old_value = card.modifiers[MODIFIER_ID][1]
+            # remove it
+            card.shield_power -= old_value
+            # remove record from modifiers
+            card.modifiers.pop(MODIFIER_ID, None)
+        
+        if card.cell_id in adj_cards:
+
+            #print('card buffed with shield')
+
+            # if not applied, add modifier to list, and add attack
+            card.modifiers[MODIFIER_ID] = ('shield_power', shield_power)
+            card.shield_power +=  shield_power
 
 
 def light_spear_position(acting_card, ship_spritelist):
@@ -624,8 +693,31 @@ card_dict = {
         'on_moved': ['default'],
         'act_function': laser_attack,
         'position_function': railgun_position
-    }
+    },
 
+    'shield_battery': {
+        'in_shop': True,
+        'sprite_id': 'shield_battery',
+        'description': 'Shield battery: adjacent rooms grant +2 shields',
+        'tier': 2,
+        'hp': 3, 
+        'atk': 0,
+        'max_energy': 2,
+        'on_energy_max': ['attack_function'],
+        'position_function': shield_buffer_position
+    },
+
+    'shield_discharger': {
+        'in_shop': True,
+        'sprite_id': 'shield_discharger',
+        'description': 'Shield discharger: give rooms on either side +1 shield on attack',
+        'tier': 2,
+        'hp': 2, 
+        'atk': 4,
+        'max_energy': 2,
+        'on_energy_max': ['attack_function'],
+        'act_function': shield_discharger_attack
+    }
 
 }
 
