@@ -565,6 +565,10 @@ class ShopView(arcade.View):
 
         return purchase_success
 
+
+    def color_valid_placements(self):
+        # function that colors which spaces on the board a tile can be placed
+
     def on_mouse_press(self, _x, _y, _button, _modifiers):
         
         # check if we have any ship or shop rooms selected when we click
