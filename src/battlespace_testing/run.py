@@ -565,6 +565,31 @@ class ShopView(arcade.View):
 
         return purchase_success
 
+    def check_valid_placement(self, boardsprite):
+        # function to check if given placement of card on the board is valid
+
+
+
+
+        cell_id = -1
+
+        # loop through background sprites, keeping track of their cell_ids in order
+        for sprite in self.board_spritelist:
+                
+            # calculate cell_id, column and row for the given sprite
+            cell_id += 1
+
+            # if this is the sprite we are looking for
+            if boardsprite == sprite:
+
+                column = ((cell_id) % 7)
+                row = math.floor((cell_id) / 7)
+
+
+        
+        self.cell_id = cell_id
+ 
+
 
     def color_valid_placements(self):
         # function that colors which spaces on the board a tile can be placed
