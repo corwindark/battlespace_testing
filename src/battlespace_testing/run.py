@@ -568,9 +568,6 @@ class ShopView(arcade.View):
     def check_valid_placement(self, boardsprite):
         # function to check if given placement of card on the board is valid
 
-
-
-
         cell_id = -1
 
         # loop through background sprites, keeping track of their cell_ids in order
